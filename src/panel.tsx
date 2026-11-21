@@ -134,7 +134,7 @@ export function View({
         <Text color={palette.gold}>
           {demo
             ? "↑↓ select    q quit"
-            : "↑↓ select   s start   r restart   x stop   q quit"}
+            : "↑↓ select   e edit   s start   r restart   x stop   q quit"}
         </Text>
       </Box>
     </Box>
@@ -157,15 +157,17 @@ export function demoFrame(i: number): Frame {
 export function Panel({
   profiles,
   demo,
+  initialIndex = 0,
 }: {
   profiles: Profile[];
   demo: boolean;
+  initialIndex?: number;
 }) {
   const names = demo ? ["EVA-A", "EVA-B"] : profiles.map((p) => p.name);
   const [frames, setFrames] = useState<Frame[]>(() =>
     names.map((_, i) => (demo ? demoFrame(i) : initial())),
   );
-  const [index, select] = useState(0);
+  const [index, select] = useState(initialIndex);
   const [message, setMessage] = useState("");
   const busy = useRef(false);
   const { exit } = useApp();
@@ -183,6 +185,10 @@ export function Panel({
       return;
     }
     if (busy.current) return;
+    if (key === "e" && !demo) {
+      exit(profiles[index].name);
+      return;
+    }
     if (k.upArrow || k.downArrow) {
       select((index + (k.upArrow ? -1 : 1) + names.length) % names.length);
       setMessage("");

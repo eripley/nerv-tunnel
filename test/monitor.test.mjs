@@ -58,6 +58,34 @@ test("configuration is local, private and rejects unsafe alias values and duplic
     await save(fixture);
     await assert.rejects(save({ ...fixture, name: "another" }));
     assert.deepEqual(await profiles(), [fixture]);
+    const other = { ...fixture, name: "other", tunnel: "org.example.other" };
+    await save(other);
+    const edited = {
+      ...fixture,
+      name: "renamed",
+      reverse: "new-return",
+      listener: "org.example.listener",
+    };
+    await save(edited, fixture);
+    assert.deepEqual(await profiles(), [edited, other]);
+    await assert.rejects(
+      save({ ...edited, name: other.name }, edited),
+      /already in use/,
+    );
+    await assert.rejects(
+      save({ ...edited, tunnel: other.tunnel }, edited),
+      /already in use/,
+    );
+    const latest = { ...edited, listener: undefined };
+    await save(latest, edited);
+    await assert.rejects(save(edited, edited), /changed since opening/);
+    await assert.rejects(save(fixture, fixture), /changed since opening/);
+    const withoutListener = {
+      ...fixture,
+      name: edited.name,
+      reverse: edited.reverse,
+    };
+    assert.deepEqual(await profiles(), [withoutListener, other]);
     assert.equal(
       // Mask the file type to compare the POSIX permission bits.
       // eslint-disable-next-line no-bitwise

@@ -23,11 +23,11 @@ async function show(app, text) {
   assert.fail(`Missing "${text}" in ${app.lastFrame()}`);
 }
 
-function setup(ok = true) {
+function setup(ok = true, original = undefined) {
   const saved = [];
   const system = {
     discover: async () => ({
-      existing: [],
+      existing: original ? [original] : [],
       tunnels: [{ label: "org.example.link", host: "station" }],
       listeners: ["org.example.listener"],
     }),
@@ -37,7 +37,10 @@ function setup(ok = true) {
       saved.push(profile);
     },
   };
-  return { app: render(React.createElement(Wizard, { system })), saved };
+  return {
+    app: render(React.createElement(Wizard, { system, original })),
+    saved,
+  };
 }
 
 test("wizard accepts a suggested name, validates the alias, and saves the selected listener only after review", async () => {
@@ -99,4 +102,36 @@ test("offline review allows going back or discarding without writing the profile
   app.stdin.write("\r");
   await delay(80);
   assert.deepEqual(saved, []);
+});
+
+test("edit a single field, review it and keep all other settings", async () => {
+  const original = {
+    name: "my-station",
+    host: "station",
+    tunnel: "org.example.link",
+    reverse: "return-host",
+    listener: "org.example.listener",
+  };
+  const { app, saved } = setup(true, original);
+  await show(app, "Which setting");
+  await show(app, original.reverse);
+  app.stdin.write("\r");
+  await show(app, "What should we call");
+  app.stdin.write("-two");
+  await show(app, "my-station-two");
+  app.stdin.write("\r");
+  await show(app, "Which setting");
+  assert.deepEqual(saved, []);
+  for (let i = 0; i < 4; i += 1) {
+    app.stdin.write("\u001b[B");
+    // Send individual key presses through Ink's input loop.
+    // eslint-disable-next-line no-await-in-loop
+    await delay(40);
+  }
+  app.stdin.write("\r");
+  await show(app, "Save changes");
+  assert.deepEqual(saved, []);
+  app.stdin.write("\r");
+  await delay(80);
+  assert.deepEqual(saved, [{ ...original, name: "my-station-two" }]);
 });

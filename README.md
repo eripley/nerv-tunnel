@@ -26,13 +26,14 @@ Demo mode uses fictional data. To configure a real connection, run `node dist/cl
 2. On first launch, choose a discovered tunnel and give it a display name. Enter the alias the remote machine uses to SSH back to the Mac. Use ↑/↓ and Enter to select its dedicated local `sshd` listener, or choose **Skip**. Esc takes you back one step.
 3. The wizard checks the round trip using `uname -s`. Review the result and confirm to save. An offline tunnel can also be saved. Each hop must already support unattended key authentication and trust its host key.
 
-Profiles are stored in `${XDG_CONFIG_HOME:-~/.config}/nerv/config.json` with mode `0600`. Addresses and key paths stay in OpenSSH configuration. Use `nerv add` for another EVA.
+Profiles are stored in `${XDG_CONFIG_HOME:-~/.config}/nerv/config.json` with mode `0600`. Addresses and key paths stay in OpenSSH configuration. Use `nerv add` for another EVA. Use `nerv edit PROFILE` to change its display name, tunnel, return SSH alias or listener. Choose **Review changes**, then **Save changes** to apply them.
 
 ## Dashboard
 
 | Key | Action |
 | --- | --- |
 | ↑ / ↓ | Select an EVA |
+| e | Edit the selected profile and review changes before saving |
 | s | Enable and start its tunnel and configured listener |
 | r | Restart the selected tunnel |
 | x | Disable and stop the selected tunnel until started again |

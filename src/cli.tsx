@@ -7,14 +7,14 @@ import { control, job, probe } from "./service.js";
 import { Panel } from "./panel.js";
 import Wizard from "./wizard.js";
 
-async function wizard() {
+async function wizard(original?: Profile) {
   if (!process.stdin.isTTY || !process.stdout.isTTY)
-    throw new Error("Run nerv add in an interactive terminal.");
-  const setup = render(<Wizard />);
-  const saved = (await setup.waitUntilExit()) === true;
+    throw new Error("Profile setup requires an interactive terminal.");
+  const setup = render(<Wizard original={original} />);
+  const saved = await setup.waitUntilExit();
   setup.clear();
   if (saved) console.log("✓ Profile saved.");
-  return saved;
+  return typeof saved === "string" ? saved : undefined;
 }
 
 async function dashboard(demo: boolean) {
@@ -28,7 +28,27 @@ async function dashboard(demo: boolean) {
       list = await profiles();
     }
   }
-  await render(<Panel profiles={list} demo={demo} />).waitUntilExit();
+  let index = 0;
+  // Input, editing and reloading are sequential screens on the same terminal.
+  /* eslint-disable no-await-in-loop */
+  for (;;) {
+    const panel = render(
+      <Panel profiles={list} demo={demo} initialIndex={index} />,
+    );
+    const selection = await panel.waitUntilExit();
+    if (typeof selection !== "string") return;
+    panel.clear();
+    const selected = list.find((p) => p.name === selection);
+    if (!selected) throw new Error("Selected profile is unavailable.");
+    const name = (await wizard(selected)) ?? selection;
+    list = await profiles();
+    if (!list.length) return;
+    index = Math.max(
+      0,
+      list.findIndex((p) => p.name === name),
+    );
+  }
+  /* eslint-enable no-await-in-loop */
 }
 
 async function selectProfiles(name?: string) {
@@ -78,6 +98,14 @@ program
   .description("Configure an existing tunnel interactively.")
   .action(async () => {
     await wizard();
+  });
+program
+  .command("edit <PROFILE>")
+  .description("Edit a saved connection profile interactively.")
+  .action(async (name: string) => {
+    const matches = await selectProfiles(name);
+    if (matches.length !== 1) throw new Error("Profile name is ambiguous.");
+    await wizard(matches[0]);
   });
 program
   .command("status [PROFILE]")

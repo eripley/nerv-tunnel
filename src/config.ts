@@ -44,19 +44,38 @@ export async function profiles(): Promise<Profile[]> {
     throw new Error(`Unsupported config: ${file}`);
   return data.profiles.map(validate);
 }
-export async function save(p: Profile) {
+export async function save(p: Profile, original?: Profile) {
   validate(p);
   await mkdir(dir, { recursive: true, mode: 0o700 });
   const lock = await open(`${file}.lock`, "wx", 0o600);
   const tmp = `${file}.${randomUUID()}`;
   try {
     const list = await profiles();
-    if (list.some((x) => x.name === p.name || x.tunnel === p.tunnel))
+    const index = original
+      ? list.findIndex((x) => x.name === original.name)
+      : -1;
+    if (
+      original &&
+      (index < 0 ||
+        !(["host", "reverse", "tunnel", "listener"] as const).every(
+          (key) => list[index][key] === original[key],
+        ))
+    )
+      throw new Error(
+        "Profile changed since opening the editor. Reopen it to load the current settings.",
+      );
+    if (
+      list.some(
+        (x, i) => i !== index && (x.name === p.name || x.tunnel === p.tunnel),
+      )
+    )
       throw new Error("Profile name or tunnel already in use");
+    if (index === -1) list.push(p);
+    else list[index] = p;
     const out = await open(tmp, "wx", 0o600);
     try {
       await out.writeFile(
-        `${JSON.stringify({ version: 1, profiles: [...list, p] }, null, 2)}\n`,
+        `${JSON.stringify({ version: 1, profiles: list }, null, 2)}\n`,
       );
     } finally {
       await out.close();

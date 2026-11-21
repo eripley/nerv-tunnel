@@ -20,7 +20,7 @@ import {
 } from "./service.js";
 
 type Tunnel = { label: string; host: string };
-async function discover() {
+async function discover(original?: Profile) {
   const existing = await profiles();
   const tunnels: Tunnel[] = [];
   const listeners: string[] = [];
@@ -30,7 +30,10 @@ async function discover() {
       // eslint-disable-next-line no-await-in-loop
       const agent = await definition(label);
       const host = tunnelHost(agent);
-      if (host && !existing.some((p) => p.tunnel === label))
+      if (
+        host &&
+        !existing.some((p) => p.tunnel === label && p.name !== original?.name)
+      )
         tunnels.push({ label, host });
       if ((agent.Program ?? agent.ProgramArguments[0]) === "/usr/sbin/sshd")
         listeners.push(label);
@@ -41,6 +44,7 @@ async function discover() {
   return { tunnels, listeners, existing };
 }
 type Step =
+  | "edit"
   | "scan"
   | "tunnel"
   | "name"
@@ -50,6 +54,7 @@ type Step =
   | "review"
   | "saving";
 const steps: Record<Step, number> = {
+  edit: 0,
   scan: 0,
   tunnel: 0,
   name: 1,
@@ -68,6 +73,7 @@ const previous: Partial<Record<Step, Step>> = {
   review: "listener",
 };
 const questions: Record<Step, string> = {
+  edit: "Which setting would you like to change?",
   scan: "Find a tunnel",
   tunnel: "Which tunnel do you want to monitor?",
   name: "What should we call this EVA?",
@@ -80,26 +86,35 @@ const questions: Record<Step, string> = {
 
 const local = { discover, checkJobs, probe, save };
 
-export default function Wizard({ system = local }: { system?: typeof local }) {
+export default function Wizard({
+  original = undefined,
+  system = local,
+}: {
+  original?: Profile;
+  system?: typeof local;
+}) {
   const { exit } = useApp();
   const compact = useCompact();
   const [step, setStep] = useState<Step>("scan");
   const [found, setFound] = useState<Awaited<ReturnType<typeof discover>>>();
-  const [draft, setDraft] = useState<Profile>({
-    name: "",
-    host: "",
-    tunnel: "",
-    reverse: "",
-  });
+  const [draft, setDraft] = useState<Profile>(
+    original ?? {
+      name: "",
+      host: "",
+      tunnel: "",
+      reverse: "",
+    },
+  );
   const [check, setCheck] = useState<Check>();
   const [error, setError] = useState("");
   function go(next: Step) {
     setError("");
     setStep(next);
   }
+  const back =
+    original && step !== "scan" && step !== "edit" ? "edit" : previous[step];
   useInput((_input, key) => {
     if (!key.escape || step === "saving") return;
-    const back = previous[step];
     if (back) go(back);
     else exit();
   });
@@ -107,11 +122,11 @@ export default function Wizard({ system = local }: { system?: typeof local }) {
     if (step !== "scan") return undefined;
     let active = true;
     system
-      .discover()
+      .discover(original)
       .then((result) => {
         if (!active) return;
         setFound(result);
-        go("tunnel");
+        go(original ? "edit" : "tunnel");
       })
       .catch((err: Error) => {
         if (active) exit(err);
@@ -119,7 +134,7 @@ export default function Wizard({ system = local }: { system?: typeof local }) {
     return () => {
       active = false;
     };
-  }, [step, exit, system]);
+  }, [step, exit, system, original]);
   useEffect(() => {
     if (step !== "verify") return undefined;
     const controller = new AbortController();
@@ -134,10 +149,10 @@ export default function Wizard({ system = local }: { system?: typeof local }) {
     verify().catch((err: Error) => {
       if (controller.signal.aborted) return;
       setError(err.message);
-      setStep("listener");
+      setStep(original ? "edit" : "listener");
     });
     return () => controller.abort();
-  }, [step, draft, system]);
+  }, [step, draft, system, original]);
   const submitField = (input: string) => {
     const value = input.trim() || (step === "name" ? draft.host : "");
     if (!token(value)) {
@@ -146,16 +161,20 @@ export default function Wizard({ system = local }: { system?: typeof local }) {
       );
       return;
     }
-    if (step === "name" && found?.existing.some((p) => p.name === value)) {
+    if (
+      step === "name" &&
+      found?.existing.some((p) => p.name === value && p.name !== original?.name)
+    ) {
       setError("That profile name is already in use.");
       return;
     }
     setDraft({ ...draft, [step]: value });
-    go(step === "name" ? "reverse" : "listener");
+    if (original) go("edit");
+    else go(step === "name" ? "reverse" : "listener");
   };
   const confirm = async (action: string) => {
     if (action === "edit") {
-      go("name");
+      go(original ? "edit" : "name");
       return;
     }
     if (action === "cancel") {
@@ -164,8 +183,8 @@ export default function Wizard({ system = local }: { system?: typeof local }) {
     }
     go("saving");
     try {
-      await system.save(draft);
-      exit(true);
+      await system.save(draft, original);
+      exit(draft.name);
     } catch (err) {
       setError((err as Error).message);
       setStep("review");
@@ -188,25 +207,30 @@ export default function Wizard({ system = local }: { system?: typeof local }) {
   return (
     <ThemeProvider theme={theme}>
       <Box flexDirection="column" paddingX={1}>
-        <Masthead title="LINK SETUP" compact={compact} />
+        <Masthead
+          title={original ? "EDIT PROFILE" : "LINK SETUP"}
+          compact={compact}
+        />
         <Box gap={1} marginTop={compact ? 0 : 1}>
           <Sweep key={step} />
-          {compact ? (
-            <Text>
-              {steps[step] + 1}/5 · {stages[steps[step]]}
-            </Text>
-          ) : (
-            stages.map((stage, i) => (
-              <Text
-                key={stage}
-                color={i <= steps[step] ? palette.gold : palette.line}
-                bold={i === steps[step]}
-              >
-                {i === steps[step] ? "▸ " : ""}
-                {stage}
+          {original && <Text bold>{original.name}</Text>}
+          {!original &&
+            (compact ? (
+              <Text>
+                {steps[step] + 1}/5 · {stages[steps[step]]}
               </Text>
-            ))
-          )}
+            ) : (
+              stages.map((stage, i) => (
+                <Text
+                  key={stage}
+                  color={i <= steps[step] ? palette.gold : palette.line}
+                  bold={i === steps[step]}
+                >
+                  {i === steps[step] ? "▸ " : ""}
+                  {stage}
+                </Text>
+              ))
+            ))}
         </Box>
         <Box
           flexDirection="column"
@@ -215,6 +239,33 @@ export default function Wizard({ system = local }: { system?: typeof local }) {
           paddingX={1}
         >
           <Text bold>{questions[step]}</Text>
+          {step === "edit" && (
+            <Select
+              key="edit"
+              options={[
+                { value: "name", label: `Display name   · ${draft.name}` },
+                {
+                  value: "tunnel",
+                  label: `Tunnel         · ${draft.host} / ${draft.tunnel}`,
+                },
+                {
+                  value: "reverse",
+                  label: `Return alias   · ${draft.reverse}`,
+                },
+                {
+                  value: "listener",
+                  label: `Listener       · ${draft.listener ?? "Managed separately"}`,
+                },
+                { value: "verify", label: "Review changes" },
+                { value: "cancel", label: "Discard and exit" },
+              ]}
+              visibleOptionCount={6}
+              onChange={(value) => {
+                if (value === "cancel") exit();
+                else go(value as Step);
+              }}
+            />
+          )}
           {step === "scan" && (
             <Busy label="Finding reverse SSH LaunchAgents…" />
           )}
@@ -228,21 +279,36 @@ export default function Wizard({ system = local }: { system?: typeof local }) {
           {step === "tunnel" && !empty && found && (
             <Select
               key="tunnel"
-              options={found.tunnels.map((t) => ({
-                value: t.label,
-                label: `${t.host}  ·  ${t.label}`,
-              }))}
+              options={[...found.tunnels]
+                .sort(
+                  (a, b) =>
+                    Number(b.label === draft.tunnel) -
+                    Number(a.label === draft.tunnel),
+                )
+                .map((t) => ({
+                  value: t.label,
+                  label: `${t.host}  ·  ${t.label}`,
+                }))}
               onChange={(label) => {
                 const choice = found.tunnels.find((t) => t.label === label);
                 if (!choice) return;
-                if (choice.label !== draft.tunnel)
+                if (original) {
                   setDraft({
+                    ...draft,
                     tunnel: choice.label,
                     host: choice.host,
-                    name: "",
-                    reverse: "",
                   });
-                go("name");
+                  go("edit");
+                } else {
+                  if (choice.label !== draft.tunnel)
+                    setDraft({
+                      tunnel: choice.label,
+                      host: choice.host,
+                      name: "",
+                      reverse: "",
+                    });
+                  go("name");
+                }
               }}
             />
           )}
@@ -273,7 +339,7 @@ export default function Wizard({ system = local }: { system?: typeof local }) {
                   ...draft,
                   listener: value === "-" ? undefined : value,
                 });
-                go("verify");
+                go(original ? "edit" : "verify");
               }}
             />
           )}
@@ -295,7 +361,10 @@ export default function Wizard({ system = local }: { system?: typeof local }) {
               <Select
                 key="review"
                 options={[
-                  { value: "save", label: "Save profile" },
+                  {
+                    value: "save",
+                    label: original ? "Save changes" : "Save profile",
+                  },
                   { value: "edit", label: "Edit connection" },
                   { value: "cancel", label: "Discard and exit" },
                 ]}
@@ -307,10 +376,10 @@ export default function Wizard({ system = local }: { system?: typeof local }) {
           {error && <Text color={palette.flame}>! {error}</Text>}
         </Box>
         <Text dimColor>
-          {step !== "saving" && (previous[step] ? "Esc back" : "Esc close")}
+          {step !== "saving" && (back ? "Esc back" : "Esc close")}
           {step === "saving" ? "" : "   ·   Ctrl+C exit"}
           {editable && "   ·   Enter continue"}
-          {!empty && ["listener", "tunnel", "review"].includes(step)
+          {!empty && ["edit", "listener", "tunnel", "review"].includes(step)
             ? "   ·   ↑↓ choose   Enter select"
             : ""}
         </Text>

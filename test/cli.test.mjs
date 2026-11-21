@@ -35,13 +35,14 @@ function run(...args) {
   return result;
 }
 
-test("help lists all seven commands and describes the required profile", () => {
+test("help lists all commands and describes the required profile", () => {
   const root = run("--help");
   assert.equal(root.status, 0, root.stderr);
   for (const command of [
     "monitor",
     "demo",
     "add",
+    "edit",
     "status",
     "start",
     "stop",
@@ -77,8 +78,8 @@ test("status reports all offline routes or just the requested profile", () => {
   assert.equal(one.stdout.trim(), "beta off unavailable", one.stderr);
 });
 
-test("lifecycle commands require a profile and reject unknown names", () => {
-  for (const action of ["start", "stop", "restart"]) {
+test("profile commands require a profile and reject unknown names", () => {
+  for (const action of ["edit", "start", "stop", "restart"]) {
     const missing = run(action);
     assert.equal(missing.status, 1);
     assert.match(missing.stderr, /missing required argument 'PROFILE'/);
