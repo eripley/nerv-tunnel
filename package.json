@@ -1,0 +1,56 @@
+{
+  "name": "nerv-tunnel",
+  "version": "0.1.0",
+  "description": "Live terminal monitor for existing reverse SSH tunnels on macOS",
+  "type": "module",
+  "bin": {
+    "nerv": "dist/cli.js"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "os": [
+    "darwin"
+  ],
+  "files": [
+    "dist",
+    "docs",
+    "README.ru.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "lint": "eslint --max-warnings=0 .eslintrc.cjs \"src/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"test/**/*.mjs\"",
+    "typecheck": "tsc --noEmit",
+    "format:check": "prettier --check .eslintrc.cjs src scripts/*.mjs test .github/workflows package.json tsconfig.json",
+    "coverage": "npm run build && npm run test:coverage",
+    "test:coverage": "mkdir -p coverage && NO_COLOR=1 node --test --experimental-test-coverage --test-coverage-include=\"dist/*.js\" --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=coverage/lcov.info test/*.test.mjs && node scripts/coverage-badge.mjs"
+  },
+  "dependencies": {
+    "@inkjs/ui": "^2.0.0",
+    "commander": "^15.1.0",
+    "ink": "^6.8.0",
+    "react": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.73.0",
+    "@typescript-eslint/parser": "^8.73.0",
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^3.10.1",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "ink-testing-library": "^4.0.0",
+    "prettier": "^3.10.1",
+    "typescript": "~5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eripley/nerv-tunnel.git"
+  }
+}
