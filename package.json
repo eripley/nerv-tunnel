@@ -25,6 +25,7 @@
     "format:check": "prettier --check .eslintrc.cjs src scripts/*.mjs test .github/workflows package.json tsconfig.json"
   },
   "dependencies": {
+    "commander": "^15.1.0",
     "ink": "^6.5.1",
     "react": "^19.1.1"
   },

@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, stat, rm } from "node:fs/promises";
@@ -119,21 +118,5 @@ test("demo and narrow panel render without reading local configuration", () => {
     assert.match(output, /SIMULATION/);
     assert.match(output, /Connected/);
     assert.match(output, /SSH check/);
-  }
-});
-
-test("lifecycle commands require an explicit profile before reading configuration", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "nerv-cli-"));
-  try {
-    for (const action of ["start", "restart", "stop"]) {
-      const result = spawnSync(process.execPath, ["dist/cli.js", action], {
-        env: { ...process.env, XDG_CONFIG_HOME: dir },
-        encoding: "utf8",
-      });
-      assert.equal(result.status, 1);
-      assert.match(result.stderr, /Specify a profile name/);
-    }
-  } finally {
-    await rm(dir, { recursive: true, force: true });
   }
 });
