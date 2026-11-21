@@ -1,0 +1,37 @@
+{
+  "name": "nerv-tunnel",
+  "version": "0.1.0",
+  "description": "Live terminal monitor for existing reverse SSH tunnels on macOS",
+  "type": "module",
+  "bin": {
+    "nerv": "dist/cli.js"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "os": [
+    "darwin"
+  ],
+  "files": [
+    "dist",
+    "docs",
+    "README.ru.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "ink": "^6.5.1",
+    "react": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "typescript": "~5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eripley/nerv-tunnel.git"
+  }
+}
