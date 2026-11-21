@@ -60,7 +60,12 @@ export function Masthead({
   compact: boolean;
 }) {
   return (
-    <Box alignItems="center" justifyContent="space-between" gap={2}>
+    <Box
+      marginTop={1}
+      alignItems="center"
+      justifyContent="space-between"
+      gap={2}
+    >
       {compact || process.env.INK_SCREEN_READER === "true" ? (
         <Text bold color={palette.flame}>
           ◢ NERV
