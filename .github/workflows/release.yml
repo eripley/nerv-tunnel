@@ -30,7 +30,8 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v6
         with:
-          node-version: "26"
+          node-version: "lts/*"
+          check-latest: true
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
       - name: Verify reviewed revision and version
@@ -38,7 +39,7 @@ jobs:
           git merge-base --is-ancestor HEAD origin/main
           version=$(node -p 'require("./package.json").version')
           test "$GITHUB_REF_NAME" = "v$version"
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: verified-npm-package
           path: verified-package
