@@ -83,3 +83,7 @@ Stop only acts on the tunnel; a companion listener can serve other connections. 
 Traffic counters come from `nettop` for each tunnel PID. Receive/send are from the perspective of NERV and include SSH overhead. The one-second sampler computes rates from counter differences. A dash means a counter is unavailable or a fresh process needs a second sample. Every 15 seconds a separate SSH check runs from NERV to the EVA and back; its duration includes both SSH handshakes. The probe executes only `uname -s` on the return host.
 
 For scripts use `nerv status [PROFILE]`, `nerv start PROFILE`, `nerv stop PROFILE` or `nerv restart PROFILE`. Status exits with code 1 if any selected route is unavailable. Set `NO_COLOR=1` for a monochrome display.
+
+## License
+
+[MIT License](LICENSE) · © 2026 Denis Chen

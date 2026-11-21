@@ -10,6 +10,7 @@ const [pack]: { filename: string; files: { path: string }[] }[] = JSON.parse(
 );
 const allowed = [
   "package.json",
+  "LICENSE",
   "README.md",
   "README.ru.md",
   "docs/control-room.jpg",

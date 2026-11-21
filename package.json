@@ -1,6 +1,11 @@
 {
   "name": "nerv-tunnel",
   "version": "0.1.0",
+  "author": {
+    "name": "Denis Chen",
+    "url": "https://github.com/eripley"
+  },
+  "license": "MIT",
   "description": "Live terminal monitor for existing reverse SSH tunnels on macOS",
   "type": "module",
   "bin": {
