@@ -1,10 +1,4 @@
-# Install NERV with npm
-
-```sh
-npm install -g nerv-tunnel
-```
-
-Requires Node.js 22.13 or later. Run `nerv demo` to explore the dashboard with sample data, or `nerv` to add your own connection.
+# NERV
 
 ![NERV control room receiving three EVA signals](docs/control-room.jpg)
 
@@ -17,7 +11,17 @@ Requires Node.js 22.13 or later. Run `nerv demo` to explore the dashboard with s
 
 [Русский](README.ru.md)
 
+NERV is a terminal dashboard for the reverse SSH tunnels your VPS agents use to reach your primary machine.
+
 In *Evangelion*, NERV is the command centre that directs the Evangelions. Here, **NERV** is your primary machine and each VPS you connect is an **EVA**.
+
+## Install NERV with npm
+
+```sh
+npm install -g nerv-tunnel
+```
+
+Requires Node.js 22.13 or later. Run `nerv demo` to explore the dashboard with sample data, or `nerv` to add your own connection.
 
 ## When NERV helps
 
