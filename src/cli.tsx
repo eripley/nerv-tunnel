@@ -6,6 +6,7 @@ import { profiles, type Profile } from "./config.js";
 import { control, job, probe } from "./service.js";
 import { copied, copySetupGuide, setupGuide } from "./agent.js";
 import { Panel, type SetupRequest } from "./panel.js";
+import GuideViewer from "./guide.js";
 import Wizard from "./wizard.js";
 import { beforeMonitor, version } from "./update.js";
 
@@ -87,7 +88,9 @@ async function status(name?: string) {
 const program = new Command()
   .name("nerv")
   .version(version)
-  .description("Monitor and control existing reverse SSH tunnels.")
+  .description(
+    "Set up reverse SSH tunnels with your agent and monitor them from NERV.",
+  )
   .showHelpAfterError("(Run the command with --help for usage.)")
   .hook("preAction", (_root, command) => {
     if (command.name() !== "demo" && process.platform !== "darwin")
@@ -104,11 +107,13 @@ program
   .action(() => dashboard(true));
 program
   .command("agent")
-  .description("Copy the EVA setup guide to the local clipboard.")
+  .description("View and copy the tunnel setup guide for your agent.")
   .option("--stdout", "Print the guide to standard output.")
-  .action(({ stdout }: { stdout?: boolean }) => {
+  .action(async ({ stdout }: { stdout?: boolean }) => {
     if (stdout) process.stdout.write(setupGuide());
-    else {
+    else if (process.stdin.isTTY && process.stdout.isTTY) {
+      await render(<GuideViewer kind="setup" />).waitUntilExit();
+    } else {
       copySetupGuide();
       console.log(copied);
     }

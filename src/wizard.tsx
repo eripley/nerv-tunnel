@@ -4,12 +4,14 @@ import { Select, TextInput, ThemeProvider } from "@inkjs/ui";
 import {
   Busy,
   Masthead,
+  KeyHint,
   palette,
   Sweep,
   theme,
   useCompact,
 } from "./console.js";
-import { copied, copySetupGuide } from "./agent.js";
+import GuideViewer from "./guide.js";
+import { copySetupGuide } from "./agent.js";
 import { profiles, save, token, type Profile } from "./config.js";
 import {
   checkJobs,
@@ -116,7 +118,7 @@ export default function Wizard({
     },
   );
   const [check, setCheck] = useState<Check>();
-  const [guideNotice, setGuideNotice] = useState("");
+  const [guideOpen, setGuideOpen] = useState(false);
   const [error, setError] = useState("");
   function finish(name?: string) {
     clearScreen?.();
@@ -124,36 +126,30 @@ export default function Wizard({
   }
   function go(next: Step) {
     setError("");
-    setGuideNotice("");
     setStep(next);
-  }
-  function copyGuide() {
-    try {
-      system.copySetupGuide();
-      setGuideNotice(copied);
-    } catch (err) {
-      setGuideNotice((err as Error).message);
-    }
   }
   const back =
     original && step !== "scan" && step !== "edit" ? "edit" : previous[step];
   const returnStep = step === "guide" && found?.tunnels.length ? "add" : back;
-  useInput((input, key) => {
-    if (step === "guide" && input === "r") {
-      go("scan");
-      return;
-    }
-    if (
-      (step === "guide" && key.return) ||
-      (input === "i" && (step === "tunnel" || step === "guide"))
-    ) {
-      copyGuide();
-      return;
-    }
-    if (!key.escape || step === "saving") return;
-    if (returnStep) go(returnStep);
-    else finish();
-  });
+  useInput(
+    (input, key) => {
+      if (step === "guide" && input === "r") {
+        go("scan");
+        return;
+      }
+      if (
+        (step === "guide" && key.return) ||
+        (input === "i" && (step === "tunnel" || step === "guide"))
+      ) {
+        setGuideOpen(true);
+        return;
+      }
+      if (!key.escape || step === "saving") return;
+      if (returnStep) go(returnStep);
+      else finish();
+    },
+    { isActive: !guideOpen },
+  );
   useEffect(() => {
     if (step !== "scan") return undefined;
     let active = true;
@@ -243,7 +239,18 @@ export default function Wizard({
   const empty = step === "tunnel" && !found?.tunnels.length;
   return (
     <ThemeProvider theme={theme}>
-      <Box flexDirection="column" paddingX={1}>
+      {guideOpen && (
+        <GuideViewer
+          kind="setup"
+          copy={system.copySetupGuide}
+          onClose={() => setGuideOpen(false)}
+        />
+      )}
+      <Box
+        display={guideOpen ? "none" : "flex"}
+        flexDirection="column"
+        paddingX={1}
+      >
         <Masthead
           title={original ? "EDIT PROFILE" : "LINK SETUP"}
           compact={compact}
@@ -325,10 +332,11 @@ export default function Wizard({
                 Give the instructions to your setup agent, then scan for the
                 tunnel it creates.
               </Text>
-              <Text bold color={palette.mint}>
-                Enter · Copy setup instructions for my agent
-              </Text>
-              <Text>r · Scan again for new tunnels</Text>
+              <KeyHint
+                shortcut="Enter"
+                label="View and copy setup instructions"
+              />
+              <KeyHint shortcut="r" label="Scan again for new tunnels" />
             </>
           )}
           {empty && (
@@ -339,6 +347,7 @@ export default function Wizard({
           {step === "tunnel" && !empty && found && (
             <Select
               key="tunnel"
+              isDisabled={guideOpen}
               options={[...found.tunnels]
                 .sort(
                   (a, b) =>
@@ -433,19 +442,25 @@ export default function Wizard({
             </>
           )}
           {step === "saving" && <Busy label="Writing local profile…" />}
-          {guideNotice && <Text color={palette.gold}>{guideNotice}</Text>}
           {error && <Text color={palette.flame}>! {error}</Text>}
         </Box>
-        <Text dimColor>
-          {step !== "saving" && (returnStep ? "Esc back" : "Esc close")}
-          {step === "saving" ? "" : "   ·   Ctrl+C close setup"}
-          {step === "tunnel" && "   ·   i copy setup guide"}
-          {editable && "   ·   Enter continue"}
-          {!empty &&
-          ["add", "edit", "listener", "tunnel", "review"].includes(step)
-            ? "   ·   ↑↓ choose   Enter select"
-            : ""}
-        </Text>
+        {step !== "saving" && (
+          <Box flexWrap="wrap" columnGap={2}>
+            <KeyHint shortcut="Esc" label={returnStep ? "back" : "close"} />
+            <KeyHint shortcut="Ctrl+C" label="close setup" />
+            {step === "tunnel" && <KeyHint shortcut="i" label="setup guide" />}
+            {editable && <KeyHint shortcut="Enter" label="continue" />}
+            {!empty &&
+              ["add", "edit", "listener", "tunnel", "review"].includes(
+                step,
+              ) && (
+                <>
+                  <KeyHint shortcut="↑↓" label="choose" />
+                  <KeyHint shortcut="Enter" label="select" />
+                </>
+              )}
+          </Box>
+        )}
       </Box>
     </ThemeProvider>
   );

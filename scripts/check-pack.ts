@@ -24,6 +24,7 @@ const allowed = [
     "cli",
     "config",
     "console",
+    "guide",
     "monitor",
     "panel",
     "service",

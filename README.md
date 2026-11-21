@@ -11,25 +11,33 @@
 
 [Русский](README.ru.md)
 
-NERV is a terminal dashboard for the reverse SSH tunnels your VPS agents use to reach your primary machine.
+NERV helps your coding agent set up a reverse SSH tunnel from your primary machine to each VPS. Its terminal dashboard lets you check which agents can reach your projects, watch traffic, and start, stop or restart each tunnel.
 
 In *Evangelion*, NERV is the command centre that directs the Evangelions. Here, **NERV** is your primary machine and each VPS you connect is an **EVA**.
 
 ---
 
-## Install NERV with npm
+## Install and launch
+
+On your primary machine, use Node.js 22.13 or later and install the CLI globally.
 
 ```sh
 npm install -g nerv-tunnel
 ```
 
-Requires Node.js 22.13 or later. Run `nerv demo` to explore the dashboard with sample data, or `nerv` to add your own connection.
+**Launch NERV** in a terminal or tmux pane.
+
+```sh
+nerv
+```
+
+On first launch, the wizard helps you set up a new EVA with your agent or register an existing tunnel. To explore the dashboard with sample data, run `nerv demo`.
 
 When you open the dashboard from a global npm installation, NERV checks the latest npm version. Press Enter to continue with your installed version, or choose **Update** to install the displayed version and reopen the dashboard. An offline registry does not prevent startup. Use `NERV_NO_UPDATE_CHECK=1 nerv` to skip the check, or `nerv --version` to see the installed version.
 
 ## When NERV helps
 
-Suppose Claude Code runs on one VPS, Codex on another and Kimi on a third, while the project they need lives on NERV. Open a reverse SSH tunnel from NERV to each EVA. An agent can then use a familiar SSH alias to read files or run commands on NERV with the permissions of its SSH account. One terminal dashboard shows which routes work, when each was last checked and how much traffic each tunnel carries.
+Suppose Claude Code runs on one VPS, Codex on another and Kimi on a third, while the project they need lives on NERV. Give your setup agent the NERV guide to establish a reverse SSH tunnel to each EVA. An agent can then use a familiar SSH alias to read files or run commands on NERV with the permissions of its SSH account. One terminal dashboard shows which routes work, when each was last checked and how much traffic each tunnel carries.
 
 ![NERV terminal dashboard showing EVA-A connected, traffic and SSH latency](docs/terminal.png)
 
@@ -41,10 +49,11 @@ NERV keeps a separate outbound SSH connection to each VPS using a user LaunchAge
 
 ## Using NERV with agents
 
-1. **Set up the link.** On NERV, run `nerv agent` (from a checkout, `node dist/cli.js agent`) or press **i** in the dashboard. Paste the copied instructions into your setup agent’s chat. The guide covers keys, aliases, the tunnel service and a round-trip check. Choose a return alias such as `nerv` for each EVA. [Agent setup guide](docs/agent-setup.md)
-2. **Register the EVA.** Press **a** and choose **Add an existing tunnel** to register it. Choose **Set up a new EVA** for the agent instructions. If no new tunnels are available, the wizard offers to copy the instructions immediately. After the agent finishes, select **Scan again for new tunnels**. Repeat for each VPS. You can run `nerv agent --stdout` to read the guide in the terminal.
-3. **Give the EVA agent its operating instructions.** Press **g** in the NERV dashboard and paste the copied text into `AGENTS.md` or `CLAUDE.md` on the EVA. The agent works on the EVA by default and uses `ssh nerv` when you explicitly ask it to work on NERV. [EVA agent instructions](docs/eva-instructions.md)
-4. **Give the agent a concrete task.** For example, ask the agent on an EVA, “The project is on NERV. Run `ssh nerv 'ls ~/projects'` and show me the available projects.” Commands that use this alias execute on NERV. Other commands in the agent’s shell run on its EVA.
+1. **Set up a new tunnel.** Run `nerv agent` on NERV, press **i** in the dashboard, or choose **Set up a new EVA** in the wizard and press **Enter**. The guide opens and NERV copies it to your clipboard. Paste it into the chat of the agent working on NERV. That agent configures the SSH keys, aliases and tunnel service, then checks the round trip. [Tunnel setup guide](docs/agent-setup.md)
+2. **Register the tunnel.** Once the agent finishes, press **Esc** to close the guide. In the wizard, press **r** to scan again and choose **Add an existing tunnel**. If you already have a working tunnel, start here with `nerv add`.
+3. **Tell the agent on the EVA how to reach NERV.** Press **g** in the dashboard to view and copy the short rule. Paste it into `AGENTS.md` or `CLAUDE.md` on the EVA. The agent works on its EVA by default and uses `ssh nerv` when you explicitly ask it to work on NERV. For example, ask it to list the projects on NERV with `ssh nerv 'ls ~/projects'`. [EVA agent instructions](docs/eva-instructions.md)
+
+In either guide, use **↑/↓** to scroll, **PgUp/PgDn** to move a page, **c** to copy the full Markdown again and **Esc** to close. For scripts, `nerv agent --stdout` prints the setup guide.
 
 ## Run from source
 
@@ -58,8 +67,8 @@ Use `node dist/cli.js` in place of `nerv` when running from a checkout.
 
 ## First connection
 
-1. Start with a working reverse tunnel. NERV supports a user LaunchAgent in `~/Library/LaunchAgents` that runs `/usr/bin/ssh` with an explicit `-R` forward and ends with the destination SSH alias.
-2. On first launch, choose a discovered tunnel and give it a display name. Enter the alias the remote machine uses to SSH back to NERV. Use ↑/↓ and Enter to select its dedicated local `sshd` listener, or choose **Skip**. Esc takes you back one step.
+1. When registering a tunnel, the wizard looks for a user LaunchAgent in `~/Library/LaunchAgents` that runs `/usr/bin/ssh` with an explicit `-R` forward and ends with the destination SSH alias.
+2. Choose a discovered tunnel and give it a display name. Enter the alias the remote machine uses to SSH back to NERV. Use ↑/↓ and Enter to select its dedicated local `sshd` listener, or choose **Skip**. Esc takes you back one step.
 3. The wizard checks the round trip using `uname -s`. Review the result and confirm to save. An offline tunnel can also be saved. Each hop must already support unattended key authentication and trust its host key.
 
 Profiles are stored in `${XDG_CONFIG_HOME:-~/.config}/nerv/config.json` with mode `0600`. Addresses and key paths stay in OpenSSH configuration. Use `nerv add` for another EVA. Use `nerv edit PROFILE` to change its display name, tunnel, return SSH alias or listener. Choose **Review changes**, then **Save changes** to apply them.
@@ -70,8 +79,8 @@ Profiles are stored in `${XDG_CONFIG_HOME:-~/.config}/nerv/config.json` with mod
 | --- | --- |
 | ↑ / ↓ | Select an EVA |
 | a | Add an existing tunnel or set up a new EVA |
-| i | Copy the environment setup guide for your agent |
-| g | Copy instructions for `AGENTS.md` or `CLAUDE.md` on the EVA |
+| i | View and copy the tunnel setup guide for your agent |
+| g | View and copy instructions for `AGENTS.md` or `CLAUDE.md` on the EVA |
 | e | Edit the selected profile and review changes before saving |
 | s | Enable and start its tunnel and configured listener |
 | r | Restart the selected tunnel |

@@ -31,19 +31,43 @@ export const theme = extendTheme(defaultTheme, {
   },
 });
 
-export function useCompact() {
+export function useTerminalSize() {
   const { stdout } = useStdout();
-  const measure = () => (stdout.columns || 80) < 66 || (stdout.rows || 24) < 19;
-  const [compact, setCompact] = useState(measure);
+  const [size, setSize] = useState(() => ({
+    columns: stdout.columns || 80,
+    rows: stdout.rows || 24,
+  }));
   useEffect(() => {
     const resize = () =>
-      setCompact((stdout.columns || 80) < 66 || (stdout.rows || 24) < 19);
+      setSize({ columns: stdout.columns || 80, rows: stdout.rows || 24 });
     stdout.on("resize", resize);
     return () => {
       stdout.off("resize", resize);
     };
   }, [stdout]);
-  return compact;
+  return size;
+}
+
+export function useCompact() {
+  const { columns, rows } = useTerminalSize();
+  return columns < 66 || rows < 19;
+}
+
+export function KeyHint({
+  shortcut,
+  label,
+}: {
+  shortcut: string;
+  label: string;
+}) {
+  return (
+    <Text>
+      <Text bold color={palette.gold}>
+        [{shortcut}]
+      </Text>{" "}
+      {label}
+    </Text>
+  );
 }
 
 const wordmark = [

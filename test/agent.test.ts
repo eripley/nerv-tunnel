@@ -31,14 +31,14 @@ test("clipboard action sends only the bundled guide to pbcopy and reports delive
   assert.throws(copySetupGuide, /agent --stdout/);
 });
 
-test("g copies the EVA rule and i still copies the setup guide", async () => {
+test("guide windows show and copy the original document, scroll, and capture input", async () => {
   write.mockReset();
   try {
     const app = render(
       React.createElement(Panel, { profiles: [], demo: false }),
     );
     await delay(50);
-    assert.match(app.lastFrame() ?? "", /g EVA instructions/);
+    assert.match(app.lastFrame() ?? "", /\[g\] EVA instructions/);
     app.stdin.write("g");
     await delay(50);
     const [binary, args, { input }] = write.mock.calls[0];
@@ -53,15 +53,41 @@ test("g copies the EVA rule and i still copies the setup guide", async () => {
     );
     assert.match(String(input), /ssh nerv 'ls ~\/projects'/);
     assert.match(app.lastFrame() ?? "", /AGENTS\.md or CLAUDE\.md/);
+    assert.match(app.lastFrame() ?? "", /ssh nerv 'ls ~\/projects'/);
     app.stdin.write("i");
+    app.stdin.write("r");
     await delay(50);
-    assert.equal(write.mock.calls[1][2].input, setupGuide());
+    assert.equal(write.mock.calls.length, 1);
+    app.stdin.write("c");
+    await delay(50);
+    assert.equal(write.mock.calls[1][2].input, input);
+    app.stdin.write("\u001b");
+    await delay(50);
+    assert.match(app.lastFrame() ?? "", /LINK MONITOR/);
     write.mockImplementation(() => {
       throw new Error("pbcopy failed");
     });
-    app.stdin.write("g");
+    app.stdin.write("i");
     await delay(50);
-    assert.match(app.lastFrame() ?? "", /Clipboard unavailable/);
+    assert.equal(write.mock.calls[2][2].input, setupGuide());
+    const first = app.lastFrame() ?? "";
+    assert.match(first, /Clipboard unavailable/);
+    assert.match(first, /Set up an EVA for NERV/);
+    Object.defineProperties(app.stdout, {
+      columns: { value: 46 },
+      rows: { value: 14 },
+    });
+    app.stdout.emit("resize");
+    await delay(50);
+    const narrow = app.lastFrame() ?? "";
+    assert.ok(narrow.split("\n").length <= 14, narrow);
+    assert.equal(write.mock.calls.length, 3);
+    app.stdin.write("\u001b[6~");
+    await delay(50);
+    assert.doesNotMatch(app.lastFrame() ?? "", /Set up an EVA for NERV/);
+    app.stdin.write("\u001b[5~");
+    await delay(50);
+    assert.equal(app.lastFrame(), narrow);
   } finally {
     cleanup();
   }
