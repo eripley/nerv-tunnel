@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Box, Text, useApp, useInput } from "ink";
+import { Box, useApp, useInput } from "ink";
 import { Select, TextInput, ThemeProvider } from "@inkjs/ui";
 import {
+  ScreenText as Text,
   Busy,
   Masthead,
   KeyHint,
@@ -10,6 +11,7 @@ import {
   theme,
   useCompact,
 } from "./console.js";
+import { UpdateFrame, useUpdateOffer, type UpdateSession } from "./update.js";
 import GuideViewer from "./guide.js";
 import { copySetupGuide } from "./agent.js";
 import { profiles, save, token, type Profile } from "./config.js";
@@ -100,10 +102,12 @@ export default function Wizard({
   original = undefined,
   clearScreen = undefined,
   system = local,
+  updates = undefined,
 }: {
   original?: Profile;
   clearScreen?: () => void;
   system?: typeof local;
+  updates?: UpdateSession;
 }) {
   const { exit } = useApp();
   const compact = useCompact();
@@ -119,6 +123,11 @@ export default function Wizard({
   );
   const [check, setCheck] = useState<Check>();
   const [guideOpen, setGuideOpen] = useState(false);
+  const offer = useUpdateOffer(updates);
+  const latest =
+    !guideOpen && (step === "guide" || step === "add")
+      ? offer.latest
+      : undefined;
   const [error, setError] = useState("");
   function finish(name?: string) {
     clearScreen?.();
@@ -133,6 +142,7 @@ export default function Wizard({
   const returnStep = step === "guide" && found?.tunnels.length ? "add" : back;
   useInput(
     (input, key) => {
+      if (latest) return;
       if (step === "guide" && input === "r") {
         go("scan");
         return;
@@ -237,7 +247,7 @@ export default function Wizard({
     : listenerOptions;
   const editable = step === "name" || step === "reverse";
   const empty = step === "tunnel" && !found?.tunnels.length;
-  return (
+  const screen = (
     <ThemeProvider theme={theme}>
       {guideOpen && (
         <GuideViewer
@@ -316,6 +326,7 @@ export default function Wizard({
           {step === "add" && (
             <Select
               key="add"
+              isDisabled={Boolean(latest)}
               options={[
                 { value: "existing", label: "Add an existing tunnel" },
                 { value: "new", label: "Set up a new EVA" },
@@ -463,5 +474,10 @@ export default function Wizard({
         )}
       </Box>
     </ThemeProvider>
+  );
+  return (
+    <UpdateFrame session={updates} latest={latest} dismiss={offer.dismiss}>
+      {screen}
+    </UpdateFrame>
   );
 }

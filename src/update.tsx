@@ -1,13 +1,14 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRequire } from "node:module";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFile, spawnSync } from "node:child_process";
 import { realpathSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { promisify } from "node:util";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Box, render, Text, useApp } from "ink";
-import { Select, ThemeProvider } from "@inkjs/ui";
+import { Box, Text, useApp, useInput } from "ink";
 import semver from "semver";
-import { palette, theme } from "./console.js";
+import { palette, Busy, Muted, useTerminalSize } from "./console.js";
 
 const registry = "https://registry.npmjs.org";
 const packageRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -51,46 +52,61 @@ export async function latestUpdate(current: string, request = fetch) {
   return undefined;
 }
 
-function UpdatePrompt({ latest }: { latest: string }) {
-  const { exit } = useApp();
-  return (
-    <ThemeProvider theme={theme}>
-      <Box flexDirection="column">
-        <Text bold color={palette.gold}>
-          NERV update · {version} → {latest}
-        </Text>
-        <Select
-          options={[
-            { value: "continue", label: "Continue with the installed version" },
-            { value: "install", label: `Update to ${latest} and open NERV` },
-          ]}
-          onChange={(choice) => exit(choice)}
-        />
-      </Box>
-    </ThemeProvider>
+const run = promisify(execFile);
+export async function install(
+  prefix: string,
+  latest: string,
+  signal: AbortSignal,
+) {
+  try {
+    await run(
+      "npm",
+      [
+        "install",
+        "--global",
+        "--prefix",
+        prefix,
+        "--registry",
+        registry,
+        "--prefer-online",
+        "--prefer-offline=false",
+        "--ignore-scripts",
+        "--no-audit",
+        "--no-fund",
+        `nerv-tunnel@${latest}`,
+      ],
+      { signal, timeout: 120000 },
+    );
+  } catch (err) {
+    const failure = err as NodeJS.ErrnoException & {
+      stderr?: string;
+      killed?: boolean;
+    };
+    const code =
+      /npm (?:error|ERR!) code ([A-Z0-9_]+)/i.exec(failure.stderr ?? "")?.[1] ??
+      failure.code;
+    if (code === "ETARGET" || code === "E404")
+      throw new Error(
+        `npm ${code}: this release is not available yet. Retry shortly.`,
+      );
+    if (code === "EACCES" || code === "EPERM")
+      throw new Error(
+        `npm ${code}: the installation directory is not writable.`,
+      );
+    if (failure.killed)
+      throw new Error("npm timed out. Check your connection and retry.");
+    throw new Error(`npm install failed (${code ?? "unknown error"}).`);
+  }
+  const pkg = JSON.parse(
+    await readFile(
+      join(prefix, "lib/node_modules/nerv-tunnel/package.json"),
+      "utf8",
+    ),
   );
-}
-
-async function ask(latest: string) {
-  const prompt = render(<UpdatePrompt latest={latest} />);
-  return prompt.waitUntilExit();
-}
-
-function install(prefix: string, latest: string) {
-  execFileSync(
-    "npm",
-    [
-      "install",
-      "--global",
-      "--prefix",
-      prefix,
-      "--registry",
-      registry,
-      "--ignore-scripts",
-      `nerv-tunnel@${latest}`,
-    ],
-    { stdio: "inherit" },
-  );
+  if (pkg.version !== latest)
+    throw new Error(
+      "npm finished but the installed version did not change to the requested release.",
+    );
 }
 
 function reopen(prefix: string) {
@@ -106,25 +122,155 @@ function reopen(prefix: string) {
   process.exitCode = child.status ?? 1;
 }
 
-// Return true when the caller should open the current dashboard.
-export async function beforeMonitor(
-  prefix = globalPrefix(packageRoot),
-  system = { latestUpdate, ask, install, reopen },
-) {
-  if (!prefix || process.env.NERV_NO_UPDATE_CHECK === "1") return true;
-  const latest = await system.latestUpdate(version);
-  if (!latest) return true;
-  const choice = await system.ask(latest);
-  if (choice === "continue") return true;
-  if (choice !== "install") return false;
-  try {
-    system.install(prefix, latest);
-  } catch {
-    process.stderr.write(
-      "Update failed. Continuing with the installed version.\n",
-    );
-    return true;
+export const restartUpdated = Symbol("restart updated NERV");
+
+export function updateSession(prefix = globalPrefix(packageRoot)) {
+  if (!prefix || process.env.NERV_NO_UPDATE_CHECK === "1") return undefined;
+  let offer = latestUpdate(version);
+  return {
+    get latest() {
+      return offer;
+    },
+    dismiss() {
+      offer = Promise.resolve(undefined);
+    },
+    install: (latest: string, signal: AbortSignal) =>
+      install(prefix, latest, signal),
+    reopen: () => reopen(prefix),
+  };
+}
+export type UpdateSession = NonNullable<ReturnType<typeof updateSession>>;
+
+export function useUpdateOffer(session?: UpdateSession) {
+  const [latest, setLatest] = useState<string>();
+  useEffect(() => {
+    let active = true;
+    void session?.latest.then((value) => {
+      if (active) setLatest(value);
+    });
+    return () => {
+      active = false;
+    };
+  }, [session]);
+  function dismiss() {
+    session?.dismiss();
+    setLatest(undefined);
   }
-  system.reopen(prefix);
-  return false;
+  return { latest, dismiss };
+}
+
+function UpdateDialog({
+  latest,
+  session,
+  dismiss,
+}: {
+  latest: string;
+  session: UpdateSession;
+  dismiss: () => void;
+}) {
+  const { exit } = useApp();
+  const { columns } = useTerminalSize();
+  const [listening, setListening] = useState(false);
+  const [choice, select] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const request = useRef<AbortController | null>(null);
+  useEffect(() => () => request.current?.abort(), []);
+  async function start() {
+    if (request.current) return;
+    const controller = new AbortController();
+    request.current = controller;
+    setPending(true);
+    setError("");
+    try {
+      await session.install(latest, controller.signal);
+      if (!controller.signal.aborted) exit(restartUpdated);
+    } catch (err) {
+      if (!controller.signal.aborted) {
+        setPending(false);
+        setError((err as Error).message);
+        select(true);
+      }
+    } finally {
+      request.current = null;
+    }
+  }
+  useInput((input, key) => {
+    if (request.current) return;
+    if (key.escape) dismiss();
+    else if (key.upArrow || key.downArrow) select((old) => !old);
+    else if (input === "u" || (key.return && choice)) void start();
+    else if (key.return) dismiss();
+  });
+  // Ink attaches useInput in a passive effect. Advertise the keys once it is active.
+  useEffect(() => setListening(true), []);
+  if (!listening) return null;
+  return (
+    <Box
+      position="absolute"
+      width="100%"
+      height="100%"
+      alignItems="center"
+      justifyContent="center"
+    >
+      <Box
+        width={Math.min(54, columns)}
+        flexDirection="column"
+        paddingX={1}
+        borderStyle="round"
+        borderColor={palette.gold}
+        backgroundColor="#212128"
+      >
+        <Text bold color={palette.gold}>
+          NERV update
+        </Text>
+        <Text>
+          {version} → {latest}
+        </Text>
+        {pending ? (
+          <Busy label={`Installing ${latest} with npm…`} />
+        ) : (
+          <>
+            {error && <Text color={palette.flame}>{error}</Text>}
+            <Text bold={choice} color={choice ? palette.mint : undefined}>
+              {choice ? "❯" : " "}{" "}
+              {error ? "Retry update" : "Update and reopen"}
+            </Text>
+            <Text bold={!choice} color={!choice ? palette.mint : undefined}>
+              {choice ? " " : "❯"} Later
+            </Text>
+            <Text dimColor>
+              ↑↓ select · Enter confirm · u update · Esc later
+            </Text>
+          </>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+export function UpdateFrame({
+  children,
+  latest = undefined,
+  session = undefined,
+  dismiss,
+}: {
+  children: React.ReactNode;
+  latest?: string;
+  session?: UpdateSession;
+  dismiss: () => void;
+}) {
+  const visible = Boolean(latest && session);
+  return (
+    <Box flexDirection="column" minHeight={visible ? 12 : undefined}>
+      <Muted.Provider value={visible}>
+        <Box flexDirection="column" aria-hidden={visible}>
+          {children}
+        </Box>
+      </Muted.Provider>
+      {latest && session && (
+        <UpdateDialog latest={latest} session={session} dismiss={dismiss} />
+      )}
+    </Box>
+  );
 }

@@ -1,6 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { Box, Text, useStdout } from "ink";
+import React, { useEffect, useState, useContext, createContext } from "react";
+import { Box, Text as InkText, useStdout, type TextProps } from "ink";
 import { defaultTheme, extendTheme, Spinner } from "@inkjs/ui";
+
+export const Muted = createContext(false);
+export function ScreenText({ dimColor, ...props }: TextProps) {
+  const muted = useContext(Muted);
+  // Keep Ink's inline text styles while dimming the screen behind a dialog.
+  // eslint-disable-next-line react/jsx-props-no-spreading
+  return <InkText {...props} dimColor={muted || dimColor} />;
+}
+const Text = ScreenText;
 
 const rgb = (hex: string) =>
   process.env.NO_COLOR === undefined ? hex : undefined;
