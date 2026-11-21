@@ -3,8 +3,9 @@ import childProcess from "node:child_process";
 import type { ExecFileSyncOptions } from "node:child_process";
 import { jest, test } from "@jest/globals";
 import { readFileSync } from "node:fs";
-import { setTimeout as delay } from "node:timers/promises";
-import React from "react";
+import { setImmediate as nextTurn } from "node:timers/promises";
+import React, { act } from "react";
+import { stripVTControlCharacters } from "node:util";
 import { render, cleanup } from "ink-testing-library";
 
 const write =
@@ -15,8 +16,28 @@ jest.unstable_mockModule("node:child_process", () => ({
   ...childProcess,
   execFileSync: write,
 }));
+const { default: GuideViewer } = await import("../src/guide.js");
 const { Panel } = await import("../src/panel.js");
 const { copySetupGuide, setupGuide } = await import("../src/agent.js");
+
+async function interact<T>(action: () => T) {
+  const env = globalThis as typeof globalThis & {
+    IS_REACT_ACT_ENVIRONMENT?: boolean;
+  };
+  const previous = env.IS_REACT_ACT_ENVIRONMENT;
+  env.IS_REACT_ACT_ENVIRONMENT = true;
+  try {
+    let result!: T;
+    await act(async () => {
+      result = action();
+      // Ink flushes a standalone Escape on the next turn of the event loop.
+      await nextTurn();
+    });
+    return result;
+  } finally {
+    env.IS_REACT_ACT_ENVIRONMENT = previous;
+  }
+}
 
 test("clipboard action sends only the bundled guide to pbcopy and reports delivery failures", () => {
   write.mockReset();
@@ -34,13 +55,14 @@ test("clipboard action sends only the bundled guide to pbcopy and reports delive
 test("guide windows show and copy the original document, scroll, and capture input", async () => {
   write.mockReset();
   try {
-    const app = render(
-      React.createElement(Panel, { profiles: [], demo: false }),
+    const app = await interact(() =>
+      render(React.createElement(Panel, { profiles: [], demo: false })),
     );
-    await delay(50);
-    assert.match(app.lastFrame() ?? "", /\[g\] EVA instructions/);
-    app.stdin.write("g");
-    await delay(50);
+    const press = (key: string) => interact(() => app.stdin.write(key));
+    const frame = () => stripVTControlCharacters(app.lastFrame() ?? "");
+    assert.match(frame(), /\[g\] EVA instructions/);
+    await press("g");
+    assert.match(frame(), /Copied\. Paste into/);
     const [binary, args, { input }] = write.mock.calls[0];
     assert.equal(binary, "/usr/bin/pbcopy");
     assert.deepEqual(args, []);
@@ -54,40 +76,52 @@ test("guide windows show and copy the original document, scroll, and capture inp
     assert.match(String(input), /ssh nerv 'ls ~\/projects'/);
     assert.match(app.lastFrame() ?? "", /AGENTS\.md or CLAUDE\.md/);
     assert.match(app.lastFrame() ?? "", /ssh nerv 'ls ~\/projects'/);
-    app.stdin.write("i");
-    app.stdin.write("r");
-    await delay(50);
+    await press("i");
+    await press("r");
     assert.equal(write.mock.calls.length, 1);
-    app.stdin.write("c");
-    await delay(50);
+    await press("c");
+    assert.equal(write.mock.calls.length, 2);
     assert.equal(write.mock.calls[1][2].input, input);
-    app.stdin.write("\u001b");
-    await delay(50);
-    assert.match(app.lastFrame() ?? "", /LINK MONITOR/);
+    await press("\u001b");
+    assert.match(frame(), /LINK MONITOR/);
     write.mockImplementation(() => {
       throw new Error("pbcopy failed");
     });
-    app.stdin.write("i");
-    await delay(50);
+    await press("i");
+    assert.match(frame(), /Clipboard unavailable/);
     assert.equal(write.mock.calls[2][2].input, setupGuide());
     const first = app.lastFrame() ?? "";
-    assert.match(first, /Clipboard unavailable/);
     assert.match(first, /Set up an EVA for NERV/);
     Object.defineProperties(app.stdout, {
       columns: { value: 46 },
       rows: { value: 14 },
     });
-    app.stdout.emit("resize");
-    await delay(50);
+    await interact(() => {
+      app.stdout.emit("resize");
+    });
+    assert.equal(frame().split("\n")[0].length, 46);
     const narrow = app.lastFrame() ?? "";
     assert.ok(narrow.split("\n").length <= 14, narrow);
     assert.equal(write.mock.calls.length, 3);
-    app.stdin.write("\u001b[6~");
-    await delay(50);
-    assert.doesNotMatch(app.lastFrame() ?? "", /Set up an EVA for NERV/);
-    app.stdin.write("\u001b[5~");
-    await delay(50);
+    await press("\u001b[6~");
+    assert.doesNotMatch(frame(), /Set up an EVA for NERV/);
+    await press("\u001b[5~");
     assert.equal(app.lastFrame(), narrow);
+  } finally {
+    cleanup();
+  }
+});
+
+test("Escape closes the standalone setup guide", async () => {
+  write.mockReset();
+  try {
+    const app = await interact(() =>
+      render(React.createElement(GuideViewer, { kind: "setup" })),
+    );
+    assert.match(app.lastFrame() ?? "", /Tunnel setup guide/);
+    await interact(() => app.stdin.write("\u001b"));
+    assert.equal(app.stdin.listenerCount("readable"), 0);
+    assert.equal(write.mock.calls.length, 1);
   } finally {
     cleanup();
   }
