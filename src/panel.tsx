@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Box, Text, useApp, useInput } from "ink";
+import { Box, useApp, useInput } from "ink";
 import { initial, watch, type Frame } from "./monitor.js";
 import { control } from "./service.js";
 import GuideViewer, { type GuideKind } from "./guide.js";
+import { UpdateFrame, useUpdateOffer, type UpdateSession } from "./update.js";
 import type { Profile } from "./config.js";
 
 import {
+  ScreenText as Text,
   KeyHint,
   Masthead,
   palette,
@@ -182,11 +184,13 @@ export function Panel({
   profiles,
   demo,
   initialIndex = 0,
+  updates = undefined,
   clearScreen = undefined,
 }: {
   profiles: Profile[];
   demo: boolean;
   initialIndex?: number;
+  updates?: UpdateSession;
   clearScreen?: () => void;
 }) {
   const names = demo ? ["EVA-A", "EVA-B"] : profiles.map((p) => p.name);
@@ -197,6 +201,8 @@ export function Panel({
   const [message, setMessage] = useState("");
   const [guide, setGuide] = useState<GuideKind>();
   const busy = useRef(false);
+  const offer = useUpdateOffer(updates);
+  const latest = !guide && !busy.current ? offer.latest : undefined;
   const { exit } = useApp();
   const compact = useCompact();
   useEffect(() => {
@@ -208,6 +214,7 @@ export function Panel({
   }, [profiles, demo]);
   useInput(
     (key, k) => {
+      if (latest) return;
       if (key === "q" || k.escape) {
         exit();
         return;
@@ -249,13 +256,15 @@ export function Panel({
   if (guide)
     return <GuideViewer kind={guide} onClose={() => setGuide(undefined)} />;
   return (
-    <View
-      names={names}
-      frames={frames}
-      index={index}
-      compact={compact}
-      message={message}
-      demo={demo}
-    />
+    <UpdateFrame latest={latest} session={updates} dismiss={offer.dismiss}>
+      <View
+        names={names}
+        frames={frames}
+        index={index}
+        compact={compact}
+        message={message}
+        demo={demo}
+      />
+    </UpdateFrame>
   );
 }

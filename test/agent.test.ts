@@ -3,10 +3,10 @@ import childProcess from "node:child_process";
 import type { ExecFileSyncOptions } from "node:child_process";
 import { jest, test } from "@jest/globals";
 import { readFileSync } from "node:fs";
-import { setImmediate as nextTurn } from "node:timers/promises";
-import React, { act } from "react";
+import React from "react";
 import { stripVTControlCharacters } from "node:util";
 import { render, cleanup } from "ink-testing-library";
+import interact from "./interact.js";
 
 const write =
   jest.fn<
@@ -19,25 +19,6 @@ jest.unstable_mockModule("node:child_process", () => ({
 const { default: GuideViewer } = await import("../src/guide.js");
 const { Panel } = await import("../src/panel.js");
 const { copySetupGuide, setupGuide } = await import("../src/agent.js");
-
-async function interact<T>(action: () => T) {
-  const env = globalThis as typeof globalThis & {
-    IS_REACT_ACT_ENVIRONMENT?: boolean;
-  };
-  const previous = env.IS_REACT_ACT_ENVIRONMENT;
-  env.IS_REACT_ACT_ENVIRONMENT = true;
-  try {
-    let result!: T;
-    await act(async () => {
-      result = action();
-      // Ink flushes a standalone Escape on the next turn of the event loop.
-      await nextTurn();
-    });
-    return result;
-  } finally {
-    env.IS_REACT_ACT_ENVIRONMENT = previous;
-  }
-}
 
 test("clipboard action sends only the bundled guide to pbcopy and reports delivery failures", () => {
   write.mockReset();

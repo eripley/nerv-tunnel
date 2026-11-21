@@ -12,6 +12,7 @@
     ]
   },
   "moduleNameMapper": {
+    "^\\./interact\\.js$": "<rootDir>/test/interact.ts",
     "^\\.\\./src/(.*)\\.js$": "<rootDir>/dist/$1.js"
   },
   "testTimeout": 20000

@@ -33,7 +33,7 @@ nerv
 
 On first launch, the wizard helps you set up a new EVA with your agent or register an existing tunnel. To explore the dashboard with sample data, run `nerv demo`.
 
-When you open the dashboard from a global npm installation, NERV checks the latest npm version. Press Enter to continue with your installed version, or choose **Update** to install the displayed version and reopen the dashboard. An offline registry does not prevent startup. Use `NERV_NO_UPDATE_CHECK=1 nerv` to skip the check, or `nerv --version` to see the installed version.
+With a global npm install, NERV checks for updates in the background while you use the dashboard or first-run wizard. When a release is available, a dialog shows both versions. Press **u** to install and reopen NERV, or **Esc** for **Later**. If npm fails, the dialog shows the reason and offers a retry. An offline registry does not block startup. Use `NERV_NO_UPDATE_CHECK=1 nerv` to skip the check or `nerv --version` to see the installed version.
 
 ## When NERV helps
 

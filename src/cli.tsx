@@ -8,15 +8,25 @@ import { copied, copySetupGuide, setupGuide } from "./agent.js";
 import { Panel, type SetupRequest } from "./panel.js";
 import GuideViewer from "./guide.js";
 import Wizard from "./wizard.js";
-import { beforeMonitor, version } from "./update.js";
+import {
+  restartUpdated,
+  updateSession,
+  type UpdateSession,
+  version,
+} from "./update.js";
 
-async function wizard(original?: Profile) {
+async function wizard(original?: Profile, updates?: UpdateSession) {
   if (!process.stdin.isTTY || !process.stdout.isTTY)
     throw new Error("Profile setup requires an interactive terminal.");
   const setup = render(
-    <Wizard original={original} clearScreen={(): void => setup.clear()} />,
+    <Wizard
+      updates={updates}
+      original={original}
+      clearScreen={(): void => setup.clear()}
+    />,
   );
   const saved = await setup.waitUntilExit();
+  if (saved === restartUpdated) return restartUpdated;
   if (saved) console.log("✓ Profile saved.");
   return typeof saved === "string" ? saved : undefined;
 }
@@ -24,12 +34,17 @@ async function wizard(original?: Profile) {
 async function dashboard(demo: boolean) {
   if (!process.stdin.isTTY || !process.stdout.isTTY)
     throw new Error("Dashboard requires a TTY. Use nerv status.");
-  if (!demo && !(await beforeMonitor())) return;
+  const updates = demo ? undefined : updateSession();
   let list: Profile[] = [];
   if (!demo) {
     list = await profiles();
     if (!list.length) {
-      if (!(await wizard())) return;
+      const result = await wizard(undefined, updates);
+      if (result === restartUpdated) {
+        updates?.reopen();
+        return;
+      }
+      if (!result) return;
       list = await profiles();
     }
   }
@@ -40,12 +55,18 @@ async function dashboard(demo: boolean) {
     const panel = render(
       <Panel
         profiles={list}
+        updates={updates}
         demo={demo}
         initialIndex={index}
         clearScreen={(): void => panel.clear()}
       />,
     );
-    const request = (await panel.waitUntilExit()) as SetupRequest | undefined;
+    const request = (await panel.waitUntilExit()) as
+      SetupRequest | typeof restartUpdated | undefined;
+    if (request === restartUpdated) {
+      updates?.reopen();
+      return;
+    }
     if (!request) return;
     const name =
       (await wizard(request.mode === "edit" ? request.profile : undefined)) ??
