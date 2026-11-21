@@ -12,13 +12,13 @@ In *Evangelion*, NERV is the command centre that directs the Evangelions. Here, 
 
 Suppose Claude Code runs on one VPS, Codex on another and Kimi on a third, while the project they need lives on NERV. Open a reverse SSH tunnel from NERV to each EVA. An agent can then use a familiar SSH alias to read files or run commands on NERV with the permissions of its SSH account. One terminal dashboard shows which routes work, when each was last checked and how much traffic each tunnel carries.
 
-![Terminal panel with fictional EVA profiles](docs/terminal.svg)
+![NERV terminal dashboard showing EVA-A connected, traffic and SSH latency](docs/terminal.png)
 
 ## How the link works
 
-![NERV opens the SSH tunnel. The EVA connects back to NERV through its forwarded loopback port.](docs/architecture.svg)
+NERV keeps a separate outbound SSH connection to each VPS using a user LaunchAgent. On each EVA, the alias `ssh nerv` points to a loopback port on that VPS. Traffic to that port travels back through its tunnel to the SSH listener on NERV. The monitor checks each active route every 15 seconds with `uname -s`.
 
-A user LaunchAgent on NERV keeps an outbound SSH connection to the EVA. The return alias on that EVA points to a loopback port forwarded back to the SSH listener on NERV. Every 15 seconds the monitor tests the full NERV → EVA → NERV route with `uname -s`.
+![Three tunnels connect NERV to VPS hosts running Claude Code, Codex and Kimi. Each agent can SSH back through its own tunnel.](docs/architecture.svg)
 
 ## Using NERV with agents
 
@@ -28,15 +28,24 @@ A user LaunchAgent on NERV keeps an outbound SSH connection to the EVA. The retu
 
 ## Try it
 
-On NERV, use Node.js 22.13 or later. Run these commands from the checkout.
+On NERV, use Node.js 22.13 or later. Once NERV is published to npm, install and try it with these commands.
 
 ```sh
-npm ci
+npm install -g nerv-tunnel
+nerv demo
+```
+
+Demo mode uses fictional data. To configure a real connection, run `nerv` in a terminal.
+
+If you have a development checkout, you can run the CLI directly from it.
+
+```sh
+npm ci --ignore-scripts
 npm run build
 node dist/cli.js demo
 ```
 
-Demo mode uses fictional data. To configure a real connection, run `node dist/cli.js` in a terminal. Once you want the global `nerv` command, run `npm link` in the checkout. If another tool already owns that command, use the checkout directly.
+Use `node dist/cli.js` in place of `nerv` when running from a checkout.
 
 ## First connection
 

@@ -438,7 +438,7 @@ export default function Wizard({
         </Box>
         <Text dimColor>
           {step !== "saving" && (returnStep ? "Esc back" : "Esc close")}
-          {step === "saving" ? "" : "   ·   Ctrl+C exit"}
+          {step === "saving" ? "" : "   ·   Ctrl+C close setup"}
           {step === "tunnel" && "   ·   i copy setup guide"}
           {editable && "   ·   Enter continue"}
           {!empty &&

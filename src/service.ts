@@ -55,13 +55,45 @@ export function tunnelHost(agent: {
   Program?: string;
   ProgramArguments: string[];
 }) {
-  const a = agent.ProgramArguments;
+  const [argv0, ...args] = agent.ProgramArguments;
   if (
-    (agent.Program ?? a[0]) !== "/usr/bin/ssh" ||
-    !a.some((x) => x.startsWith("-R"))
+    (agent.Program ?? argv0) !== "/usr/bin/ssh" ||
+    args.some((arg) => typeof arg !== "string")
   )
     return undefined;
-  return token(a.at(-1)) ? a.at(-1) : undefined;
+
+  // OpenSSH accepts clustered flags and takes an operand from the remainder
+  // of a cluster or from the next argument.
+  const flags = "246ACKMNTXYafgknqtvxy";
+  const options = "BDEFIJLPRSbceilmopw";
+  let hasForward = false;
+  let i = 0;
+  for (; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === "--") {
+      i += 1;
+      break;
+    }
+    if (arg === "-" || !arg.startsWith("-")) break;
+    const offset = [...arg.slice(1)].findIndex((flag) => !flags.includes(flag));
+    if (offset >= 0) {
+      const flag = arg[offset + 1];
+      if (!options.includes(flag)) return undefined;
+      let value = arg.slice(offset + 2);
+      if (!value) {
+        i += 1;
+        value = args[i];
+      }
+      if (!value) return undefined;
+      if (flag === "R") {
+        const operand = value.trim();
+        if (!operand || operand.startsWith("-")) return undefined;
+        hasForward = true;
+      }
+    }
+  }
+  const host = args[i];
+  return hasForward && i === args.length - 1 && token(host) ? host : undefined;
 }
 export async function checkJobs(p: Profile) {
   if (tunnelHost(await definition(p.tunnel)) !== p.host)
@@ -94,7 +126,7 @@ export async function control(
   action: "start" | "stop" | "restart",
   system = { checkJobs, job, launch },
 ) {
-  await system.checkJobs(p);
+  await system.checkJobs(action === "stop" ? { ...p, listener: undefined } : p);
   const target = `${domain}/${p.tunnel}`;
   if (action !== "start") {
     await system.launch("disable", target);
@@ -103,9 +135,15 @@ export async function control(
   }
   if (action !== "stop") {
     const startJob = async (label: string) => {
-      await system.launch("enable", `${domain}/${label}`);
-      if ((await system.job(label)).state === "off")
+      const jobTarget = `${domain}/${label}`;
+      await system.launch("enable", jobTarget);
+      let status = await system.job(label);
+      if (status.state === "off") {
         await system.launch("bootstrap", domain, plist(label));
+        status = await system.job(label);
+      }
+      if (!status.pid && status.state !== "running")
+        await system.launch("kickstart", jobTarget);
     };
     if (p.listener) await startJob(p.listener);
     await startJob(p.tunnel);

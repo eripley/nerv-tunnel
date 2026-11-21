@@ -4,8 +4,8 @@ Help me connect my Mac and one Linux machine I administer. Work from the Mac. Se
 
 ## Inspect the two ends
 
-1. Check the available OpenSSH client, macOS user LaunchAgents, NERV profiles, and the existing SSH alias for this EVA. Reuse a working tunnel or listener. Choose an unused high loopback port on the EVA for a new forward. Record the Mac account and local SSH listener port. Preserve other profiles and running jobs.
-2. On the Mac, use Node.js 22.13+ and npm. In the NERV checkout run `npm ci --ignore-scripts`, `npm run build`, then `node dist/cli.js --help`. Use this entry point wherever the guide says `nerv` if the binary is not linked.
+1. On the Mac, run `nerv --help` to check for an installed CLI. If needed, use Node.js 22.13+ and install with `npm install -g nerv-tunnel` once the package is published. If you already have a development checkout, you can run `npm ci --ignore-scripts` and `npm run build` there, then use `node dist/cli.js` wherever this guide says `nerv`.
+2. Check the available OpenSSH client, macOS user LaunchAgents, NERV profiles, and the existing SSH alias for this EVA. Reuse a working tunnel or listener. Choose an unused high loopback port on the EVA for a new forward. Record the Mac account and local SSH listener port. Preserve other profiles and running jobs.
 3. On the EVA, use a regular SSH account. Confirm the distribution and which parts of the workspace the owner wants. Set up the tunnel first so you can verify it independently.
 
 ## Prepare the requested workspace

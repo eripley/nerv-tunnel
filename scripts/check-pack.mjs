@@ -16,7 +16,7 @@ const allowed = [
   "docs/coverage.svg",
   "docs/architecture.svg",
   "docs/agent-setup.md",
-  "docs/terminal.svg",
+  "docs/terminal.png",
   ...[
     "agent",
     "cli",
