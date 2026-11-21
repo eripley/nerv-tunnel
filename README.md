@@ -15,6 +15,8 @@ NERV is a terminal dashboard for the reverse SSH tunnels your VPS agents use to 
 
 In *Evangelion*, NERV is the command centre that directs the Evangelions. Here, **NERV** is your primary machine and each VPS you connect is an **EVA**.
 
+---
+
 ## Install NERV with npm
 
 ```sh
