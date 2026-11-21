@@ -1,3 +1,3 @@
-NERV — командный центр. Работай на текущей EVA по умолчанию.
-Если пользователь явно просит работать на NERV, запускай команды через `ssh nerv '<команда>'`.
-Например, чтобы показать проекты на NERV, выполни `ssh nerv 'ls ~/projects'`.
+NERV is the command center. Work on the current EVA by default.
+Run commands on NERV via `ssh nerv '<command>'` only when the user explicitly asks you to work on NERV.
+For example, to list projects on NERV, run `ssh nerv 'ls ~/projects'`.
