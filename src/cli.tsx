@@ -2,78 +2,19 @@
 import React from "react";
 import { Command } from "commander";
 import { render } from "ink";
-import { createInterface } from "node:readline/promises";
-import { profiles, save, validate, type Profile } from "./config.js";
-import {
-  checkJobs,
-  control,
-  definition,
-  job,
-  labels,
-  probe,
-  tunnelHost,
-} from "./service.js";
+import { profiles, type Profile } from "./config.js";
+import { control, job, probe } from "./service.js";
 import { Panel } from "./panel.js";
+import Wizard from "./wizard.js";
 
 async function wizard() {
   if (!process.stdin.isTTY || !process.stdout.isTTY)
     throw new Error("Run nerv add in an interactive terminal.");
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const choices: { label: string; host: string }[] = [];
-    for (const label of await labels()) {
-      try {
-        // Inspect one local plist at a time to bound child process usage.
-        // eslint-disable-next-line no-await-in-loop
-        const host = tunnelHost(await definition(label));
-        if (host) choices.push({ label, host });
-      } catch {
-        /* unrelated plist */
-      }
-    }
-    if (!choices.length)
-      throw new Error(
-        "No existing reverse SSH LaunchAgent found. See README for supported jobs.",
-      );
-    choices.forEach((c, i) =>
-      console.log(`${String(i + 1)}. ${c.label} → ${c.host}`),
-    );
-    const choice = choices[Number(await rl.question("Tunnel number: ")) - 1];
-    if (!choice) throw new Error("Select a listed tunnel number.");
-    const name = (
-      await rl.question("Display name (letters, digits, dash): ")
-    ).trim();
-    const reverse = (
-      await rl.question("SSH alias on that host for the return connection: ")
-    ).trim();
-    const listener = (
-      await rl.question(
-        "Optional companion sshd LaunchAgent label (Enter to skip): ",
-      )
-    ).trim();
-    const p = validate({
-      name,
-      host: choice.host,
-      reverse,
-      tunnel: choice.label,
-      ...(listener ? { listener } : {}),
-    });
-    await checkJobs(p);
-    console.log(
-      (await probe(p)).ok
-        ? "Mac route verified."
-        : "Route unavailable. Check the aliases or start this tunnel later.",
-    );
-    if (
-      (await rl.question("Save this profile? [y/N] ")).trim().toLowerCase() !==
-      "y"
-    )
-      return false;
-    await save(p);
-    return true;
-  } finally {
-    rl.close();
-  }
+  const setup = render(<Wizard />);
+  const saved = (await setup.waitUntilExit()) === true;
+  setup.clear();
+  if (saved) console.log("✓ Profile saved.");
+  return saved;
 }
 
 async function dashboard(demo: boolean) {

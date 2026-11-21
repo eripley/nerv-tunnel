@@ -23,7 +23,7 @@ Demo mode uses fictional data. To configure a real connection, run `node dist/cl
 ## First connection
 
 1. Start with a working reverse tunnel. NERV supports a user LaunchAgent in `~/Library/LaunchAgents` that runs `/usr/bin/ssh` with an explicit `-R` forward and ends with the destination SSH alias.
-2. On first launch, choose a discovered tunnel and give it a display name. Enter the alias the remote machine uses to SSH back to the Mac. If the tunnel has a dedicated local `sshd` LaunchAgent, you can enter its label too.
+2. On first launch, choose a discovered tunnel and give it a display name. Enter the alias the remote machine uses to SSH back to the Mac. Use ↑/↓ and Enter to select its dedicated local `sshd` listener, or choose **Skip**. Esc takes you back one step.
 3. The wizard checks the round trip using `uname -s`. Review the result and confirm to save. An offline tunnel can also be saved. Each hop must already support unattended key authentication and trust its host key.
 
 Profiles are stored in `${XDG_CONFIG_HOME:-~/.config}/nerv/config.json` with mode `0600`. Addresses and key paths stay in OpenSSH configuration. Use `nerv add` for another EVA.

@@ -1,14 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Box, Text, useApp, useInput, useStdout } from "ink";
+import { Box, Text, useApp, useInput } from "ink";
 import { initial, watch, type Frame } from "./monitor.js";
 import { control } from "./service.js";
 import type { Profile } from "./config.js";
 
-const color = (hex: string) =>
-  process.env.NO_COLOR !== undefined ? undefined : hex;
-const mint = color("#79dbad");
-const amber = color("#ffaf62");
-const red = color("#ef768a");
+import { Masthead, palette, Sweep, Busy, useCompact } from "./console.js";
+
 function formatBytes(n?: number) {
   if (n === undefined) return "—";
   const units = ["B", "KiB", "MiB", "GiB", "TiB"];
@@ -42,52 +39,104 @@ export function View({
   demo?: boolean;
 }) {
   const f = frames[index] ?? initial();
+  const connected = f.phase === "Connected";
   return (
     <Box flexDirection="column" paddingX={1}>
-      <Text bold color={amber}>
-        NERV <Text dimColor>{demo ? "SIMULATION" : "LINK MONITOR"}</Text>
-      </Text>
-      <Box flexDirection="column" marginY={1}>
-        {names.map((name, i) => (
-          <Text key={name} bold={i === index}>
-            {i === index ? "› " : "  "}
-            {name}{" "}
-            <Text color={frames[i]?.phase === "Connected" ? mint : amber}>
-              {frames[i]?.phase ?? "Checking"}
+      <Masthead
+        compact={compact}
+        title={demo ? "SIMULATION" : "LINK MONITOR"}
+      />
+      <Box gap={1} marginTop={compact ? 0 : 1}>
+        <Sweep key={names[index]} />
+        <Text bold>{names[index]}</Text>
+        <Text color={connected ? palette.mint : palette.gold}>
+          {connected ? "●" : "◇"} {f.phase}
+        </Text>
+      </Box>
+      {names.length > 1 && (
+        <Box columnGap={2} flexWrap="wrap">
+          {names.map((name, i) => (
+            <Text
+              key={name}
+              color={i === index ? palette.gold : palette.line}
+              bold={i === index}
+            >
+              {i === index ? "▸" : "·"} {name}{" "}
+              <Text
+                color={
+                  frames[i]?.phase === "Connected" ? palette.mint : palette.gold
+                }
+              >
+                {frames[i]?.phase === "Connected" ? "●" : "◇"}
+              </Text>
             </Text>
+          ))}
+        </Box>
+      )}
+      <Box
+        flexDirection="column"
+        borderStyle="round"
+        borderColor={palette.line}
+        paddingX={1}
+      >
+        <Box justifyContent="space-between">
+          <Text bold color={palette.gold}>
+            TRAFFIC
+          </Text>
+          <Text dimColor>rate / total</Text>
+        </Box>
+        {(["rx", "tx"] as const).map((k) => (
+          <Text key={k}>
+            <Text bold color={k === "rx" ? palette.mint : palette.violet}>
+              {k === "rx" ? "↓ RX  " : "↑ TX  "}
+            </Text>
+            <Text bold>
+              {`${formatBytes(f.speed?.[k])}/s`.padEnd(compact ? 12 : 15)}
+            </Text>
+            {!compact && (
+              <Text color={k === "rx" ? palette.mint : palette.violet}>
+                {spark(f[k]).padEnd(22)}
+              </Text>
+            )}
+            {formatBytes(f.count?.[k])}
           </Text>
         ))}
       </Box>
-      <Text>
-        Uptime {f.uptime || "—"} PID {f.process.pid ?? "—"}
-      </Text>
-      {(["rx", "tx"] as const).map((k) => (
-        <Text key={k}>
-          {k === "rx" ? "Receive    " : "Send       "}
-          {`${formatBytes(f.speed?.[k])}/s`.padEnd(14)}
-          <Text color={k === "rx" ? mint : amber}>
-            {compact ? "" : spark(f[k]).padEnd(22)}
-          </Text>
-          {formatBytes(f.count?.[k])}
+      <Box
+        flexDirection="column"
+        paddingX={1}
+        borderStyle="single"
+        borderTop={false}
+        borderBottom={false}
+        borderRight={false}
+        borderColor={palette.violet}
+      >
+        <Text>
+          <Text bold>SSH check </Text>
+          {f.check
+            ? `${f.check.ok ? `${f.check.ms} ms` : "failed"}  ·  ${new Date(f.check.at).toLocaleTimeString()}`
+            : "—"}
         </Text>
-      ))}
-      <Text>
-        SSH check{" "}
-        {f.check
-          ? `${f.check.ok ? `${f.check.ms} ms` : "failed"}   ${new Date(
-              f.check.at,
-            ).toLocaleTimeString()}`
-          : "—"}
-      </Text>
-      <Box flexDirection="column" marginY={1}>
-        {f.events.length > 0 && <Text dimColor>{f.events.join("\n")}</Text>}
+        <Text dimColor>
+          Uptime {f.uptime || "—"} · PID {f.process.pid ?? "—"}
+        </Text>
+        {f.events.length > 0 && (
+          <Text dimColor>{f.events.slice(0, compact ? 1 : 3).join("\n")}</Text>
+        )}
       </Box>
-      {message && <Text color={red}>{message}</Text>}
-      <Text dimColor>
-        {demo
-          ? "↑/↓ select   q quit"
-          : "↑/↓ select   s start   r restart   x stop   q quit"}
-      </Text>
+      {message &&
+        (message.endsWith("…") ? (
+          <Busy label={message} />
+        ) : (
+          <Text color={palette.flame}>{message}</Text>
+        ))}
+      <Box marginTop={compact ? 0 : 1}>
+        <Text color={palette.gold}>
+          {demo
+            ? "↑↓ select    q quit"
+            : "↑↓ select   s start   r restart   x stop   q quit"}
+        </Text>
+      </Box>
     </Box>
   );
 }
@@ -120,7 +169,7 @@ export function Panel({
   const [message, setMessage] = useState("");
   const busy = useRef(false);
   const { exit } = useApp();
-  const { stdout } = useStdout();
+  const compact = useCompact();
   useEffect(() => {
     if (demo) return undefined;
     const stops = profiles.map((p, i) =>
@@ -158,7 +207,7 @@ export function Panel({
       names={names}
       frames={frames}
       index={index}
-      compact={(stdout.columns ?? 80) < 66}
+      compact={compact}
       message={message}
       demo={demo}
     />

@@ -1,1 +1,97 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="750" height="331" viewBox="0 0 750 331" role="img" aria-label="NERV terminal in demo mode"><rect width="100%" height="100%" rx="10" fill="#131819"/><g font-family="monospace" font-size="16" xml:space="preserve"><text x="18" y="32"><tspan fill="#dde4df" font-weight="400"> </tspan><tspan fill="#dde4df" font-weight="700">NERV   </tspan><tspan fill="#96a69e" font-weight="700">SIMULATION</tspan><tspan fill="#dde4df" font-weight="400"></tspan></text><text x="18" y="55"><tspan fill="#dde4df" font-weight="400"></tspan></text><text x="18" y="78"><tspan fill="#dde4df" font-weight="400"> </tspan><tspan fill="#dde4df" font-weight="700">› EVA-A   Connected</tspan><tspan fill="#dde4df" font-weight="400"></tspan></text><text x="18" y="101"><tspan fill="#dde4df" font-weight="400">   EVA-B   Connected</tspan></text><text x="18" y="124"><tspan fill="#dde4df" font-weight="400"></tspan></text><text x="18" y="147"><tspan fill="#dde4df" font-weight="400"> Uptime     01:42:18    PID 200</tspan></text><text x="18" y="170"><tspan fill="#dde4df" font-weight="400"> Receive    18.0 KiB/s    ▁▂▁▄▆▂▅▃▁█▅           46.5 MiB</tspan></text><text x="18" y="193"><tspan fill="#dde4df" font-weight="400"> Send       2.1 KiB/s     ▁▂▂▄▁▂█▆▄█▂           8.0 MiB</tspan></text><text x="18" y="216"><tspan fill="#dde4df" font-weight="400"> SSH check  328 ms   2:32:00 PM</tspan></text><text x="18" y="239"><tspan fill="#dde4df" font-weight="400"></tspan></text><text x="18" y="262"><tspan fill="#dde4df" font-weight="400"> </tspan><tspan fill="#96a69e" font-weight="400">Link verified</tspan><tspan fill="#dde4df" font-weight="400"></tspan></text><text x="18" y="285"><tspan fill="#dde4df" font-weight="400"></tspan></text><text x="18" y="308"><tspan fill="#dde4df" font-weight="400"> </tspan><tspan fill="#96a69e" font-weight="400">↑/↓ select   q quit</tspan><tspan fill="#dde4df" font-weight="400"></tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="386" role="img" aria-label="NERV dashboard with fictional tunnels in simulation mode"><rect width="100%" height="100%" fill="#10141C" rx="10"/><g font-family="monospace" font-size="16" xml:space="preserve">
+<text x="16" y="30">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#ff6549" font-weight="700" opacity="1">█▄  █  █▀▀▀  █▀▀█  █   █</tspan>
+</text>
+<text x="16" y="52">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#ff6549" font-weight="700" opacity="1">█ ▀▄█  █▀▀   █▀█▀   █ █ </tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1">                                        </tspan>
+<tspan fill="#ffc46b" font-weight="700" opacity="1">SIMULATION</tspan>
+</text>
+<text x="16" y="74">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#ff6549" font-weight="700" opacity="1">█   █  █▄▄▄  █  █    █  </tspan>
+</text>
+<text x="16" y="96">
+</text>
+<text x="16" y="118">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#ff6549" font-weight="400" opacity="1">▰▰▰▰</tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#D6DFE8" font-weight="700" opacity="1">EVA-A</tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#76e3ba" font-weight="400" opacity="1">● Connected</tspan>
+</text>
+<text x="16" y="140">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#ffc46b" font-weight="700" opacity="1">▸ EVA-A </tspan>
+<tspan fill="#76e3ba" font-weight="700" opacity="1">●</tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1">  </tspan>
+<tspan fill="#63768d" font-weight="400" opacity="1">· EVA-B </tspan>
+<tspan fill="#76e3ba" font-weight="400" opacity="1">●</tspan>
+</text>
+<text x="16" y="162">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#63768d" font-weight="400" opacity="1">╭────────────────────────────────────────────────────────────────────────╮</tspan>
+</text>
+<text x="16" y="184">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#63768d" font-weight="400" opacity="1">│</tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#ffc46b" font-weight="700" opacity="1">TRAFFIC</tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1">                                                   </tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="0.75">rate / total</tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#63768d" font-weight="400" opacity="1">│</tspan>
+</text>
+<text x="16" y="206">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#63768d" font-weight="400" opacity="1">│</tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#76e3ba" font-weight="700" opacity="1">↓ RX  </tspan>
+<tspan fill="#D6DFE8" font-weight="700" opacity="1">18.0 KiB/s     </tspan>
+<tspan fill="#76e3ba" font-weight="400" opacity="1">▁▂▁▄▆▂▅▃▁█▅           </tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1">46.5 MiB                    </tspan>
+<tspan fill="#63768d" font-weight="400" opacity="1">│</tspan>
+</text>
+<text x="16" y="228">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#63768d" font-weight="400" opacity="1">│</tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#bcabff" font-weight="700" opacity="1">↑ TX  </tspan>
+<tspan fill="#D6DFE8" font-weight="700" opacity="1">2.1 KiB/s      </tspan>
+<tspan fill="#bcabff" font-weight="400" opacity="1">▁▂▂▄▁▂█▆▄█▂           </tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1">8.0 MiB                     </tspan>
+<tspan fill="#63768d" font-weight="400" opacity="1">│</tspan>
+</text>
+<text x="16" y="250">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#63768d" font-weight="400" opacity="1">╰────────────────────────────────────────────────────────────────────────╯</tspan>
+</text>
+<text x="16" y="272">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#bcabff" font-weight="400" opacity="1">│</tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#D6DFE8" font-weight="700" opacity="1">SSH check </tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1">328 ms  ·  12:30:00 PM</tspan>
+</text>
+<text x="16" y="294">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#bcabff" font-weight="400" opacity="1">│</tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="0.75">Uptime 01:42:18 · PID 200</tspan>
+</text>
+<text x="16" y="316">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#bcabff" font-weight="400" opacity="1">│</tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#D6DFE8" font-weight="400" opacity="0.75">Link verified</tspan>
+</text>
+<text x="16" y="338">
+</text>
+<text x="16" y="360">
+<tspan fill="#D6DFE8" font-weight="400" opacity="1"> </tspan>
+<tspan fill="#ffc46b" font-weight="400" opacity="1">↑↓ select    q quit</tspan>
+</text>
+</g></svg>

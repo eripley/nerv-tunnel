@@ -14,7 +14,7 @@ const allowed = [
   "README.ru.md",
   "docs/control-room.jpg",
   "docs/terminal.svg",
-  ...["cli", "config", "monitor", "panel", "service"].map(
+  ...["cli", "config", "console", "monitor", "panel", "service", "wizard"].map(
     (name) => `dist/${name}.js`,
   ),
 ].sort();
