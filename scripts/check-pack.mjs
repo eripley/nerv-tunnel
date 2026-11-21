@@ -13,6 +13,7 @@ const allowed = [
   "README.md",
   "README.ru.md",
   "docs/control-room.jpg",
+  "docs/coverage.svg",
   "docs/architecture.svg",
   "docs/agent-setup.md",
   "docs/terminal.svg",

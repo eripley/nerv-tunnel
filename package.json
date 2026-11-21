@@ -22,7 +22,9 @@
     "test": "npm run build && node --test test/*.test.mjs",
     "lint": "eslint --max-warnings=0 .eslintrc.cjs \"src/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"test/**/*.mjs\"",
     "typecheck": "tsc --noEmit",
-    "format:check": "prettier --check .eslintrc.cjs src scripts/*.mjs test .github/workflows package.json tsconfig.json"
+    "format:check": "prettier --check .eslintrc.cjs src scripts/*.mjs test .github/workflows package.json tsconfig.json",
+    "coverage": "npm run build && npm run test:coverage",
+    "test:coverage": "mkdir -p coverage && NO_COLOR=1 node --test --experimental-test-coverage --test-coverage-include=\"dist/*.js\" --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=coverage/lcov.info test/*.test.mjs && node scripts/coverage-badge.mjs"
   },
   "dependencies": {
     "@inkjs/ui": "^2.0.0",

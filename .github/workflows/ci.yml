@@ -1,4 +1,4 @@
-name: Check
+name: CI
 on:
   pull_request:
   push:
@@ -33,8 +33,16 @@ jobs:
         run: npm run lint
       - name: Check formatting
         run: npm run format:check
-      - name: Test compiled CLI
-        run: node --test test/*.test.mjs
+      - name: Run tests with line coverage
+        run: npm run test:coverage
+      - name: Check README coverage badge
+        run: git diff --exit-code -- docs/coverage.svg
+      - name: Keep coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-line-coverage
+          path: coverage/lcov.info
+          if-no-files-found: error
       - name: Pack, inspect and install CLI
         run: node scripts/check-pack.mjs
       - name: Scan commit history and extracted npm archive

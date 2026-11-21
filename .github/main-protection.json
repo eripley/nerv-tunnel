@@ -1,9 +1,20 @@
 {
   "required_status_checks": {
     "strict": true,
-    "checks": [{ "context": "Verify CLI", "app_id": 15368 }]
+    "checks": [
+      {
+        "context": "Verify CLI",
+        "app_id": 15368
+      },
+      {
+        "context": "Compile CLI",
+        "app_id": 15368
+      }
+    ]
   },
   "enforce_admins": true,
-  "required_pull_request_reviews": { "required_approving_review_count": 0 },
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 0
+  },
   "restrictions": null
 }

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="432" viewBox="0 0 1000 432" role="img" aria-labelledby="title desc">
   <title id="title">NERV reverse SSH link</title>
-  <desc id="desc">On the Mac, launchd runs the SSH client and NERV observes its process. The Mac opens an SSH connection to the EVA. An SSH client on the EVA connects to a loopback port forwarded through that connection to the Mac SSH listener.</desc>
+  <desc id="desc">On NERV, launchd runs the SSH client and NERV observes its process. NERV opens an SSH connection to the EVA. An SSH client on the EVA connects to a loopback port forwarded through that connection to the SSH listener on NERV.</desc>
   <defs>
     <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#26303c" stroke-width="1"/></pattern>
     <pattern id="stripe" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M-2 12 12-2" fill="none" stroke="#ff6549" stroke-width="4"/></pattern>
@@ -16,11 +16,11 @@
     <path d="M34 84H966" stroke="#63768d"/>
     <path d="M34 108H277L297 128V343H34Z" stroke="#63768d" stroke-width="2" fill="#181f2a"/>
     <path d="M703 108H946L966 128V343H703Z" stroke="#63768d" stroke-width="2" fill="#181f2a"/>
-    <g font-size="28" font-weight="bold" fill="#ffc46b"><text x="56" y="149">Mac</text><text x="725" y="149">EVA</text></g>
+    <g font-size="28" font-weight="bold" fill="#ffc46b"><text x="56" y="149">NERV</text><text x="725" y="149">EVA</text></g>
     <g fill="#dde5ee" font-size="20"><text x="56" y="207">SSH client</text><text x="725" y="207">SSH server</text><text x="56" y="292">SSH listener</text><text x="725" y="292">Return SSH alias</text></g>
-    <g fill="#b4c0d0" font-size="15"><text x="56" y="232">owned by launchd</text><text x="725" y="232">remote account</text><text x="56" y="318">Mac user account</text><text x="725" y="318">EVA loopback port</text></g>
+    <g fill="#b4c0d0" font-size="15"><text x="56" y="232">owned by launchd</text><text x="725" y="232">remote account</text><text x="56" y="318">NERV user account</text><text x="725" y="318">EVA loopback port</text></g>
     <g fill="none" stroke-width="4"><path d="M297 200H697" stroke="#ff9169" marker-end="url(#out)"/><path d="M703 286H303" stroke="#76e3ba" stroke-dasharray="9 5" marker-end="url(#in)"/></g>
-    <g text-anchor="middle" font-size="17" font-weight="bold"><text x="500" y="181" fill="#ff9169">Mac opens the tunnel</text><text x="500" y="267" fill="#76e3ba">EVA connects back inside it</text></g>
+    <g text-anchor="middle" font-size="17" font-weight="bold"><text x="500" y="181" fill="#ff9169">NERV opens the tunnel</text><text x="500" y="267" fill="#76e3ba">EVA connects back inside it</text></g>
     <path d="M34 373H966" stroke="#63768d"/>
     <text x="34" y="401" fill="#bcabff" font-size="16" font-weight="bold">NERV TELEMETRY</text>
     <text x="215" y="401" fill="#d6dfe8" font-size="16">launchd PID   /   nettop RX + TX   /   round-trip SSH check</text>
