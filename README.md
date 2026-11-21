@@ -8,6 +8,14 @@ Monitor existing reverse SSH tunnels from your Mac. Each remote machine is an **
 
 ![Terminal panel with fictional EVA profiles](docs/terminal.svg)
 
+## How the link works
+
+![The Mac opens the SSH tunnel. The EVA connects back to the Mac through its forwarded loopback port.](docs/architecture.svg)
+
+The Mac’s user LaunchAgent keeps an outbound SSH connection to the EVA. On the EVA, the return alias points to a loopback port that forwards through this connection to the Mac’s SSH listener. The same layout applies to each EVA. NERV reads process and traffic data on the Mac and periodically tests the full Mac → EVA → Mac route with `uname -s`.
+
+**Setting up a new machine with an agent?** Run `nerv agent` (from a checkout, `node dist/cli.js agent`) and paste the copied setup guide into your agent chat. It covers SSH keys and aliases, the Mac listener, the LaunchAgent, profile registration and verification. Press **i** for the same clipboard action from the live dashboard or tunnel picker. For plain text output use `nerv agent --stdout`. [Read the guide](docs/agent-setup.md)
+
 ## Try it
 
 Requires macOS and Node.js 22.13 or later. From this checkout:
@@ -33,6 +41,8 @@ Profiles are stored in `${XDG_CONFIG_HOME:-~/.config}/nerv/config.json` with mod
 | Key | Action |
 | --- | --- |
 | ↑ / ↓ | Select an EVA |
+| a | Add an existing tunnel as a new EVA and select its saved profile |
+| i | Copy the environment setup guide for your agent |
 | e | Edit the selected profile and review changes before saving |
 | s | Enable and start its tunnel and configured listener |
 | r | Restart the selected tunnel |

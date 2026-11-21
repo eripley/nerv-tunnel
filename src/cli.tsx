@@ -4,15 +4,17 @@ import { Command } from "commander";
 import { render } from "ink";
 import { profiles, type Profile } from "./config.js";
 import { control, job, probe } from "./service.js";
-import { Panel } from "./panel.js";
+import { copied, copySetupGuide, setupGuide } from "./agent.js";
+import { Panel, type SetupRequest } from "./panel.js";
 import Wizard from "./wizard.js";
 
 async function wizard(original?: Profile) {
   if (!process.stdin.isTTY || !process.stdout.isTTY)
     throw new Error("Profile setup requires an interactive terminal.");
-  const setup = render(<Wizard original={original} />);
+  const setup = render(
+    <Wizard original={original} clearScreen={(): void => setup.clear()} />,
+  );
   const saved = await setup.waitUntilExit();
-  setup.clear();
   if (saved) console.log("✓ Profile saved.");
   return typeof saved === "string" ? saved : undefined;
 }
@@ -33,14 +35,18 @@ async function dashboard(demo: boolean) {
   /* eslint-disable no-await-in-loop */
   for (;;) {
     const panel = render(
-      <Panel profiles={list} demo={demo} initialIndex={index} />,
+      <Panel
+        profiles={list}
+        demo={demo}
+        initialIndex={index}
+        clearScreen={(): void => panel.clear()}
+      />,
     );
-    const selection = await panel.waitUntilExit();
-    if (typeof selection !== "string") return;
-    panel.clear();
-    const selected = list.find((p) => p.name === selection);
-    if (!selected) throw new Error("Selected profile is unavailable.");
-    const name = (await wizard(selected)) ?? selection;
+    const request = (await panel.waitUntilExit()) as SetupRequest | undefined;
+    if (!request) return;
+    const name =
+      (await wizard(request.mode === "edit" ? request.profile : undefined)) ??
+      request.profile.name;
     list = await profiles();
     if (!list.length) return;
     index = Math.max(
@@ -93,6 +99,17 @@ program
   .command("demo")
   .description("Open the dashboard with fictional profiles.")
   .action(() => dashboard(true));
+program
+  .command("agent")
+  .description("Copy the EVA setup guide to the Mac clipboard.")
+  .option("--stdout", "Print the guide to standard output.")
+  .action(({ stdout }: { stdout?: boolean }) => {
+    if (stdout) process.stdout.write(setupGuide());
+    else {
+      copySetupGuide();
+      console.log(copied);
+    }
+  });
 program
   .command("add")
   .description("Configure an existing tunnel interactively.")

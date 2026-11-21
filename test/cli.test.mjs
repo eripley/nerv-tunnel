@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, test } from "node:test";
@@ -41,6 +41,7 @@ test("help lists all commands and describes the required profile", () => {
   for (const command of [
     "monitor",
     "demo",
+    "agent",
     "add",
     "edit",
     "status",
@@ -100,4 +101,14 @@ test("Commander rejects unknown commands, unknown options and extra arguments", 
     assert.equal(result.status, 1);
     assert.match(result.stderr, error);
   }
+});
+
+test("agent can print the bundled guide without reading configured profiles", async () => {
+  const expected = await readFile(
+    new URL("../docs/agent-setup.md", import.meta.url),
+    "utf8",
+  );
+  const result = run("agent", "--stdout");
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, expected);
 });

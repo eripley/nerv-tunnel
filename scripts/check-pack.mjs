@@ -13,10 +13,19 @@ const allowed = [
   "README.md",
   "README.ru.md",
   "docs/control-room.jpg",
+  "docs/architecture.svg",
+  "docs/agent-setup.md",
   "docs/terminal.svg",
-  ...["cli", "config", "console", "monitor", "panel", "service", "wizard"].map(
-    (name) => `dist/${name}.js`,
-  ),
+  ...[
+    "agent",
+    "cli",
+    "config",
+    "console",
+    "monitor",
+    "panel",
+    "service",
+    "wizard",
+  ].map((name) => `dist/${name}.js`),
 ].sort();
 const actual = pack.files.map((f) => f.path).sort();
 if (JSON.stringify(allowed) !== JSON.stringify(actual))
@@ -39,6 +48,13 @@ try {
   execFileSync(join(temp, "node_modules", ".bin", "nerv"), ["--help"], {
     stdio: "inherit",
   });
+  const guide = execFileSync(
+    join(temp, "node_modules", ".bin", "nerv"),
+    ["agent", "--stdout"],
+    { encoding: "utf8" },
+  );
+  if (!guide.startsWith("# Set up an EVA"))
+    throw Error("Packaged setup guide missing");
 } finally {
   rmSync(temp, { force: true, recursive: true });
 }

@@ -26,7 +26,11 @@ async function run(
 }
 const launch = (...args: string[]) => run("/bin/launchctl", args);
 export async function labels() {
-  return (await readdir(agentDir))
+  const files = await readdir(agentDir).catch((err: NodeJS.ErrnoException) => {
+    if (err.code === "ENOENT") return [];
+    throw err;
+  });
+  return files
     .filter((x) => x.endsWith(".plist"))
     .map((x) => x.slice(0, -6))
     .filter(token);

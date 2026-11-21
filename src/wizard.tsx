@@ -9,6 +9,7 @@ import {
   theme,
   useCompact,
 } from "./console.js";
+import { copied, copySetupGuide } from "./agent.js";
 import { profiles, save, token, type Profile } from "./config.js";
 import {
   checkJobs,
@@ -88,9 +89,11 @@ const local = { discover, checkJobs, probe, save };
 
 export default function Wizard({
   original = undefined,
+  clearScreen = undefined,
   system = local,
 }: {
   original?: Profile;
+  clearScreen?: () => void;
   system?: typeof local;
 }) {
   const { exit } = useApp();
@@ -106,17 +109,32 @@ export default function Wizard({
     },
   );
   const [check, setCheck] = useState<Check>();
+  const [guideNotice, setGuideNotice] = useState("");
   const [error, setError] = useState("");
+  function finish(name?: string) {
+    clearScreen?.();
+    exit(name);
+  }
   function go(next: Step) {
     setError("");
+    setGuideNotice("");
     setStep(next);
   }
   const back =
     original && step !== "scan" && step !== "edit" ? "edit" : previous[step];
-  useInput((_input, key) => {
+  useInput((input, key) => {
+    if (input === "i" && step === "tunnel") {
+      try {
+        copySetupGuide();
+        setGuideNotice(copied);
+      } catch (err) {
+        setGuideNotice((err as Error).message);
+      }
+      return;
+    }
     if (!key.escape || step === "saving") return;
     if (back) go(back);
-    else exit();
+    else finish();
   });
   useEffect(() => {
     if (step !== "scan") return undefined;
@@ -178,13 +196,13 @@ export default function Wizard({
       return;
     }
     if (action === "cancel") {
-      exit();
+      finish();
       return;
     }
     go("saving");
     try {
       await system.save(draft, original);
-      exit(draft.name);
+      finish(draft.name);
     } catch (err) {
       setError((err as Error).message);
       setStep("review");
@@ -261,7 +279,7 @@ export default function Wizard({
               ]}
               visibleOptionCount={6}
               onChange={(value) => {
-                if (value === "cancel") exit();
+                if (value === "cancel") finish();
                 else go(value as Step);
               }}
             />
@@ -373,11 +391,13 @@ export default function Wizard({
             </>
           )}
           {step === "saving" && <Busy label="Writing local profile…" />}
+          {guideNotice && <Text color={palette.gold}>{guideNotice}</Text>}
           {error && <Text color={palette.flame}>! {error}</Text>}
         </Box>
         <Text dimColor>
           {step !== "saving" && (back ? "Esc back" : "Esc close")}
           {step === "saving" ? "" : "   ·   Ctrl+C exit"}
+          {step === "tunnel" && "   ·   i copy setup guide"}
           {editable && "   ·   Enter continue"}
           {!empty && ["edit", "listener", "tunnel", "review"].includes(step)
             ? "   ·   ↑↓ choose   Enter select"

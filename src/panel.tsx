@@ -2,9 +2,12 @@ import React, { useEffect, useState, useRef } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import { initial, watch, type Frame } from "./monitor.js";
 import { control } from "./service.js";
+import { copied, copySetupGuide } from "./agent.js";
 import type { Profile } from "./config.js";
 
 import { Masthead, palette, Sweep, Busy, useCompact } from "./console.js";
+
+export type SetupRequest = { mode: "add" | "edit"; profile: Profile };
 
 function formatBytes(n?: number) {
   if (n === undefined) return "—";
@@ -128,13 +131,15 @@ export function View({
         (message.endsWith("…") ? (
           <Busy label={message} />
         ) : (
-          <Text color={palette.flame}>{message}</Text>
+          <Text color={message === copied ? palette.mint : palette.flame}>
+            {message}
+          </Text>
         ))}
       <Box marginTop={compact ? 0 : 1}>
         <Text color={palette.gold}>
           {demo
             ? "↑↓ select    q quit"
-            : "↑↓ select   e edit   s start   r restart   x stop   q quit"}
+            : "↑↓ select  a add  e edit  i copy guide  s start  r restart  x stop  q quit"}
         </Text>
       </Box>
     </Box>
@@ -158,10 +163,12 @@ export function Panel({
   profiles,
   demo,
   initialIndex = 0,
+  clearScreen = undefined,
 }: {
   profiles: Profile[];
   demo: boolean;
   initialIndex?: number;
+  clearScreen?: () => void;
 }) {
   const names = demo ? ["EVA-A", "EVA-B"] : profiles.map((p) => p.name);
   const [frames, setFrames] = useState<Frame[]>(() =>
@@ -185,8 +192,21 @@ export function Panel({
       return;
     }
     if (busy.current) return;
-    if (key === "e" && !demo) {
-      exit(profiles[index].name);
+    if (!demo && key === "i") {
+      try {
+        copySetupGuide();
+        setMessage(copied);
+      } catch (err) {
+        setMessage((err as Error).message);
+      }
+      return;
+    }
+    if (!demo && (key === "a" || key === "e")) {
+      clearScreen?.();
+      exit({
+        mode: key === "a" ? "add" : "edit",
+        profile: profiles[index],
+      } satisfies SetupRequest);
       return;
     }
     if (k.upArrow || k.downArrow) {
