@@ -7,6 +7,7 @@ import { control, job, probe } from "./service.js";
 import { copied, copySetupGuide, setupGuide } from "./agent.js";
 import { Panel, type SetupRequest } from "./panel.js";
 import Wizard from "./wizard.js";
+import { beforeMonitor, version } from "./update.js";
 
 async function wizard(original?: Profile) {
   if (!process.stdin.isTTY || !process.stdout.isTTY)
@@ -22,6 +23,7 @@ async function wizard(original?: Profile) {
 async function dashboard(demo: boolean) {
   if (!process.stdin.isTTY || !process.stdout.isTTY)
     throw new Error("Dashboard requires a TTY. Use nerv status.");
+  if (!demo && !(await beforeMonitor())) return;
   let list: Profile[] = [];
   if (!demo) {
     list = await profiles();
@@ -84,6 +86,7 @@ async function status(name?: string) {
 
 const program = new Command()
   .name("nerv")
+  .version(version)
   .description("Monitor and control existing reverse SSH tunnels.")
   .showHelpAfterError("(Run the command with --help for usage.)")
   .hook("preAction", (_root, command) => {

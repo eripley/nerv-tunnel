@@ -25,6 +25,8 @@ npm install -g nerv-tunnel
 
 Requires Node.js 22.13 or later. Run `nerv demo` to explore the dashboard with sample data, or `nerv` to add your own connection.
 
+When you open the dashboard from a global npm installation, NERV checks the latest npm version. Press Enter to continue with your installed version, or choose **Update** to install the displayed version and reopen the dashboard. An offline registry does not prevent startup. Use `NERV_NO_UPDATE_CHECK=1 nerv` to skip the check, or `nerv --version` to see the installed version.
+
 ## When NERV helps
 
 Suppose Claude Code runs on one VPS, Codex on another and Kimi on a third, while the project they need lives on NERV. Open a reverse SSH tunnel from NERV to each EVA. An agent can then use a familiar SSH alias to read files or run commands on NERV with the permissions of its SSH account. One terminal dashboard shows which routes work, when each was last checked and how much traffic each tunnel carries.

@@ -26,6 +26,7 @@ const allowed = [
     "monitor",
     "panel",
     "service",
+    "update",
     "wizard",
   ].map((name) => `dist/${name}.js`),
 ].sort();
