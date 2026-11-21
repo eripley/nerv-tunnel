@@ -1,8 +1,19 @@
-# NERV
+# Install NERV with npm
+
+```sh
+npm install -g nerv-tunnel
+```
+
+Requires Node.js 22.13 or later. Run `nerv demo` to explore the dashboard with sample data, or `nerv` to add your own connection.
 
 ![NERV control room receiving three EVA signals](docs/control-room.jpg)
 
-[![Build](https://github.com/eripley/nerv-tunnel/actions/workflows/build.yml/badge.svg)](https://github.com/eripley/nerv-tunnel/actions/workflows/build.yml) [![CI](https://github.com/eripley/nerv-tunnel/actions/workflows/ci.yml/badge.svg)](https://github.com/eripley/nerv-tunnel/actions/workflows/ci.yml) [![Line coverage](docs/coverage.svg)](https://github.com/eripley/nerv-tunnel/actions/workflows/ci.yml)
+<p align="center">
+  <a href="https://www.npmjs.com/package/nerv-tunnel"><img src="https://img.shields.io/npm/v/nerv-tunnel.svg" alt="Latest npm version"></a>
+  <a href="https://github.com/eripley/nerv-tunnel/actions/workflows/build.yml"><img src="https://github.com/eripley/nerv-tunnel/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <a href="https://github.com/eripley/nerv-tunnel/actions/workflows/ci.yml"><img src="https://github.com/eripley/nerv-tunnel/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/eripley/nerv-tunnel/actions/workflows/ci.yml"><img src="docs/coverage.svg" alt="Line coverage"></a>
+</p>
 
 [Русский](README.ru.md)
 
@@ -26,18 +37,7 @@ NERV keeps a separate outbound SSH connection to each VPS using a user LaunchAge
 2. **Register the EVA.** Press **a** and choose **Add an existing tunnel** to register it. Choose **Set up a new EVA** for the agent instructions. If no new tunnels are available, the wizard offers to copy the instructions immediately. After the agent finishes, select **Scan again for new tunnels**. Repeat for each VPS. You can run `nerv agent --stdout` to read the guide in the terminal.
 3. **Give the agent a concrete task.** For example, ask the agent on an EVA, “The project is on NERV. Run `ssh nerv 'ls ~/projects'` and show me the available projects.” Commands that use this alias execute on NERV. Other commands in the agent’s shell run on its EVA.
 
-## Try it
-
-On NERV, use Node.js 22.13 or later. Once NERV is published to npm, install and try it with these commands.
-
-```sh
-npm install -g nerv-tunnel
-nerv demo
-```
-
-Demo mode uses fictional data. To configure a real connection, run `nerv` in a terminal.
-
-If you have a development checkout, you can run the CLI directly from it.
+## Run from source
 
 ```sh
 npm ci --ignore-scripts

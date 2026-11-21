@@ -1,8 +1,19 @@
-# NERV
+# Установка NERV через npm
+
+```sh
+npm install -g nerv-tunnel
+```
+
+Понадобится Node.js 22.13 или новее. Запусти `nerv demo`, чтобы посмотреть панель на примере, или `nerv`, чтобы добавить своё соединение.
 
 ![Центр управления NERV принимает сигналы трёх EVA](docs/control-room.jpg)
 
-[![Build](https://github.com/eripley/nerv-tunnel/actions/workflows/build.yml/badge.svg)](https://github.com/eripley/nerv-tunnel/actions/workflows/build.yml) [![CI](https://github.com/eripley/nerv-tunnel/actions/workflows/ci.yml/badge.svg)](https://github.com/eripley/nerv-tunnel/actions/workflows/ci.yml) [![Line coverage](docs/coverage.svg)](https://github.com/eripley/nerv-tunnel/actions/workflows/ci.yml)
+<p align="center">
+  <a href="https://www.npmjs.com/package/nerv-tunnel"><img src="https://img.shields.io/npm/v/nerv-tunnel.svg" alt="Версия в npm"></a>
+  <a href="https://github.com/eripley/nerv-tunnel/actions/workflows/build.yml"><img src="https://github.com/eripley/nerv-tunnel/actions/workflows/build.yml/badge.svg" alt="Сборка"></a>
+  <a href="https://github.com/eripley/nerv-tunnel/actions/workflows/ci.yml"><img src="https://github.com/eripley/nerv-tunnel/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/eripley/nerv-tunnel/actions/workflows/ci.yml"><img src="docs/coverage.svg" alt="Покрытие строк"></a>
+</p>
 
 [English](README.md)
 
@@ -26,18 +37,7 @@
 2. **Зарегистрируй EVA.** Нажми **a** и выбери **Add an existing tunnel**, чтобы добавить туннель в панель. Пункт **Set up a new EVA** открывает инструкцию для агента. Если свободных туннелей нет, мастер сразу предложит скопировать инструкцию. Когда агент закончит настройку, выбери **Scan again for new tunnels**. Повтори для остальных VPS. Чтобы прочитать инструкцию в терминале, выполни `nerv agent --stdout`.
 3. **Дай агенту задачу.** Например, попроси агента на EVA показать список проектов на NERV командой `ssh nerv 'ls ~/projects'`. Команды через этот алиас выполняются на NERV. Остальные команды в оболочке агента выполняются на его EVA.
 
-## Попробовать
-
-На NERV понадобится Node.js 22.13 или новее. После публикации пакета в npm установи и попробуй NERV этими командами.
-
-```sh
-npm install -g nerv-tunnel
-nerv demo
-```
-
-Демо использует вымышленные данные. Для настройки реального соединения запусти `nerv` в терминале.
-
-Если у тебя есть локальная копия репозитория, CLI можно запустить из неё.
+## Запуск из исходников
 
 ```sh
 npm ci --ignore-scripts

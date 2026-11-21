@@ -101,7 +101,7 @@ program
   .action(() => dashboard(true));
 program
   .command("agent")
-  .description("Copy the EVA setup guide to the Mac clipboard.")
+  .description("Copy the EVA setup guide to the local clipboard.")
   .option("--stdout", "Print the guide to standard output.")
   .action(({ stdout }: { stdout?: boolean }) => {
     if (stdout) process.stdout.write(setupGuide());
