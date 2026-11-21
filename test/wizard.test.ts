@@ -160,11 +160,13 @@ test("new EVA offers a guide even with available tunnels and Escape returns to t
   app.stdin.write("\u001b[B");
   await delay(40);
   app.stdin.write("\r");
-  await show(app, "Copy setup instructions");
+  await show(app, "View and copy setup instructions");
   assert.equal(copies, 0);
   app.stdin.write("\r");
   await show(app, "Paste it into your agent chat");
   assert.equal(copies, 1);
+  app.stdin.write("\u001b");
+  await show(app, "View and copy setup instructions");
   app.stdin.write("\u001b");
   await show(app, "Add an existing tunnel");
 });
@@ -186,9 +188,14 @@ test("empty discovery opens the guide directly and lets the user rescan after se
     },
   });
   await show(app, "No new tunnels found");
-  await show(app, "Copy setup instructions");
+  await show(app, "View and copy setup instructions");
   app.stdin.write("\r");
   await show(app, "Run nerv agent --stdout");
+  app.stdin.write("r");
+  await delay(50);
+  assert.equal(scans, 1);
+  app.stdin.write("\u001b");
+  await show(app, "No new tunnels found");
   app.stdin.write("r");
   await show(app, "Add an existing tunnel");
   app.stdin.write("\r");

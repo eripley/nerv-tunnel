@@ -2,15 +2,17 @@ import React, { useEffect, useState, useRef } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import { initial, watch, type Frame } from "./monitor.js";
 import { control } from "./service.js";
-import {
-  copied,
-  copySetupGuide,
-  evaCopied,
-  copyEvaInstructions,
-} from "./agent.js";
+import GuideViewer, { type GuideKind } from "./guide.js";
 import type { Profile } from "./config.js";
 
-import { Masthead, palette, Sweep, Busy, useCompact } from "./console.js";
+import {
+  KeyHint,
+  Masthead,
+  palette,
+  Sweep,
+  Busy,
+  useCompact,
+} from "./console.js";
 
 export type SetupRequest = { mode: "add" | "edit"; profile: Profile };
 
@@ -136,22 +138,28 @@ export function View({
         (message.endsWith("…") ? (
           <Busy label={message} />
         ) : (
-          <Text
-            color={
-              message === copied || message === evaCopied
-                ? palette.mint
-                : palette.flame
-            }
-          >
-            {message}
-          </Text>
+          <Text color={palette.flame}>{message}</Text>
         ))}
-      <Box marginTop={compact ? 0 : 1}>
-        <Text color={palette.gold}>
-          {demo
-            ? "↑↓ select    q quit"
-            : "↑↓ select  a add  e edit  i setup guide  g EVA instructions  s start  r restart  x stop  q quit"}
-        </Text>
+      <Box marginTop={compact ? 0 : 1} columnGap={2} flexWrap="wrap">
+        {(demo
+          ? [
+              ["↑↓", "select"],
+              ["q", "quit"],
+            ]
+          : [
+              ["↑↓", "select"],
+              ["a", "add"],
+              ["e", "edit"],
+              ["i", "setup guide"],
+              ["g", "EVA instructions"],
+              ["s", "start"],
+              ["r", "restart"],
+              ["x", "stop"],
+              ["q", "quit"],
+            ]
+        ).map(([shortcut, label]) => (
+          <KeyHint key={shortcut} shortcut={shortcut} label={label} />
+        ))}
       </Box>
     </Box>
   );
@@ -187,6 +195,7 @@ export function Panel({
   );
   const [index, select] = useState(initialIndex);
   const [message, setMessage] = useState("");
+  const [guide, setGuide] = useState<GuideKind>();
   const busy = useRef(false);
   const { exit } = useApp();
   const compact = useCompact();
@@ -197,53 +206,48 @@ export function Panel({
     );
     return () => stops.forEach((stop) => stop());
   }, [profiles, demo]);
-  useInput((key, k) => {
-    if (key === "q" || k.escape) {
-      exit();
-      return;
-    }
-    if (busy.current) return;
-    if (!demo && (key === "i" || key === "g")) {
-      try {
-        if (key === "g") {
-          copyEvaInstructions();
-          setMessage(evaCopied);
-        } else {
-          copySetupGuide();
-          setMessage(copied);
-        }
-      } catch (err) {
-        setMessage((err as Error).message);
+  useInput(
+    (key, k) => {
+      if (key === "q" || k.escape) {
+        exit();
+        return;
       }
-      return;
-    }
-    if (!demo && (key === "a" || key === "e")) {
-      clearScreen?.();
-      exit({
-        mode: key === "a" ? "add" : "edit",
-        profile: profiles[index],
-      } satisfies SetupRequest);
-      return;
-    }
-    if (k.upArrow || k.downArrow) {
-      select((index + (k.upArrow ? -1 : 1) + names.length) % names.length);
-      setMessage("");
-      return;
-    }
-    const action = ({ s: "start", r: "restart", x: "stop" } as const)[
-      key as "s" | "r" | "x"
-    ];
-    if (!demo && action) {
-      busy.current = true;
-      setMessage(`${action}…`);
-      void control(profiles[index], action)
-        .then(() => setMessage(""))
-        .catch((e: Error) => setMessage(e.message))
-        .finally(() => {
-          busy.current = false;
-        });
-    }
-  });
+      if (busy.current) return;
+      if (!demo && (key === "i" || key === "g")) {
+        setGuide(key === "i" ? "setup" : "eva");
+        return;
+      }
+      if (!demo && (key === "a" || key === "e")) {
+        clearScreen?.();
+        exit({
+          mode: key === "a" ? "add" : "edit",
+          profile: profiles[index],
+        } satisfies SetupRequest);
+        return;
+      }
+      if (k.upArrow || k.downArrow) {
+        select((index + (k.upArrow ? -1 : 1) + names.length) % names.length);
+        setMessage("");
+        return;
+      }
+      const action = ({ s: "start", r: "restart", x: "stop" } as const)[
+        key as "s" | "r" | "x"
+      ];
+      if (!demo && action) {
+        busy.current = true;
+        setMessage(`${action}…`);
+        void control(profiles[index], action)
+          .then(() => setMessage(""))
+          .catch((e: Error) => setMessage(e.message))
+          .finally(() => {
+            busy.current = false;
+          });
+      }
+    },
+    { isActive: !guide },
+  );
+  if (guide)
+    return <GuideViewer kind={guide} onClose={() => setGuide(undefined)} />;
   return (
     <View
       names={names}

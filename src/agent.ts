@@ -33,13 +33,16 @@ export function copySetupGuide() {
   );
 }
 
-export function copyEvaInstructions() {
-  const input = readFileSync(
+export function evaInstructions() {
+  return readFileSync(
     new URL("../docs/eva-instructions.md", import.meta.url),
     "utf8",
   );
+}
+
+export function copyEvaInstructions() {
   copy(
-    input,
+    evaInstructions(),
     "Clipboard unavailable. See the EVA instructions linked in the README.",
   );
 }
