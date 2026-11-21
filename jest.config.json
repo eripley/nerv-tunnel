@@ -1,0 +1,18 @@
+{
+  "testEnvironment": "node",
+  "testMatch": ["<rootDir>/test/**/*.test.ts"],
+  "extensionsToTreatAsEsm": [".ts"],
+  "transform": {
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        "useESM": true,
+        "tsconfig": "tsconfig.tools.json"
+      }
+    ]
+  },
+  "moduleNameMapper": {
+    "^\\.\\./src/(.*)\\.js$": "<rootDir>/dist/$1.js"
+  },
+  "testTimeout": 20000
+}

@@ -25,7 +25,7 @@ module.exports = {
   },
   overrides: [
     {
-      files: ["src/**/*.ts", "src/**/*.tsx"],
+      files: ["src/**/*.ts", "src/**/*.tsx", "scripts/**/*.ts", "test/**/*.ts"],
       parser: "@typescript-eslint/parser",
       extends: ["plugin:@typescript-eslint/recommended", "prettier"],
       rules: {
@@ -48,7 +48,7 @@ module.exports = {
     },
     { files: ["src/cli.tsx"], rules: { "no-console": "off" } },
     {
-      files: ["test/**/*.mjs", "scripts/**/*.mjs", "*.cjs"],
+      files: ["test/**/*.ts", "scripts/**/*.ts", "*.cjs"],
       rules: {
         "import/no-extraneous-dependencies": [
           "error",

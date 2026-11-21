@@ -3,10 +3,10 @@ import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, test } from "node:test";
+import { afterAll, beforeAll, test } from "@jest/globals";
 
-let configHome;
-before(async () => {
+let configHome: string;
+beforeAll(async () => {
   configHome = await mkdtemp(join(tmpdir(), "nerv-cli-"));
   const configDir = join(configHome, "nerv");
   await mkdir(configDir);
@@ -21,11 +21,11 @@ before(async () => {
     JSON.stringify({ version: 1, profiles }),
   );
 });
-after(async () => {
+afterAll(async () => {
   await rm(configHome, { recursive: true, force: true });
 });
 
-function run(...args) {
+function run(...args: string[]) {
   const result = spawnSync(process.execPath, ["dist/cli.js", ...args], {
     env: { ...process.env, XDG_CONFIG_HOME: configHome, NO_COLOR: "1" },
     encoding: "utf8",
@@ -96,7 +96,7 @@ test("Commander rejects unknown commands, unknown options and extra arguments", 
     [["status", "--typo"], /unknown option/],
     [["monitor", "alpha"], /too many arguments/],
     [["stop", "alpha", "beta"], /too many arguments/],
-  ]) {
+  ] as const) {
     const result = run(...args);
     assert.equal(result.status, 1);
     assert.match(result.stderr, error);

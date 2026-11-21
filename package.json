@@ -19,12 +19,13 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --test test/*.test.mjs",
-    "lint": "eslint --max-warnings=0 .eslintrc.cjs \"src/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"test/**/*.mjs\"",
-    "typecheck": "tsc --noEmit",
-    "format:check": "prettier --check .eslintrc.cjs src scripts/*.mjs test .github/workflows package.json tsconfig.json",
+    "test": "npm run build && node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+    "lint": "eslint --max-warnings=0 .eslintrc.cjs \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\" \"test/**/*.ts\"",
+    "typecheck": "tsc --noEmit -p tsconfig.tools.json",
+    "format:check": "prettier --check .eslintrc.cjs src scripts/*.ts test .github/workflows package.json tsconfig*.json jest.config.json",
     "coverage": "npm run build && npm run test:coverage",
-    "test:coverage": "mkdir -p coverage && NO_COLOR=1 node --test --experimental-test-coverage --test-coverage-include=\"dist/*.js\" --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=coverage/lcov.info test/*.test.mjs && node scripts/coverage-badge.mjs"
+    "test:coverage": "c8 --all --include=\"dist/*.js\" --reporter=text --reporter=lcovonly --reporter=json-summary node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand && node --experimental-strip-types scripts/coverage-badge.ts",
+    "check:pack": "node --experimental-strip-types scripts/check-pack.ts"
   },
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
@@ -33,10 +34,12 @@
     "react": "^19.1.1"
   },
   "devDependencies": {
+    "@jest/globals": "^30.5.2",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@typescript-eslint/eslint-plugin": "^8.73.0",
     "@typescript-eslint/parser": "^8.73.0",
+    "c8": "^12.0.0",
     "eslint": "^8.57.1",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-config-prettier": "^10.1.8",
@@ -46,7 +49,9 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^4.6.2",
     "ink-testing-library": "^4.0.0",
+    "jest": "^30.5.2",
     "prettier": "^3.10.1",
+    "ts-jest": "^29.4.15",
     "typescript": "~5.9.3"
   },
   "repository": {

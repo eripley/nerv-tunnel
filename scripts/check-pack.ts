@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const [pack] = JSON.parse(
+const [pack]: { filename: string; files: { path: string }[] }[] = JSON.parse(
   execFileSync("npm", ["pack", "--json", "--ignore-scripts"], {
     encoding: "utf8",
   }),
