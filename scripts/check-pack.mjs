@@ -16,6 +16,7 @@ const allowed = [
   "docs/coverage.svg",
   "docs/architecture.svg",
   "docs/agent-setup.md",
+  "docs/eva-instructions.md",
   "docs/terminal.png",
   ...[
     "agent",

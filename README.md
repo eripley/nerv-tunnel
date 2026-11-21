@@ -41,7 +41,8 @@ NERV keeps a separate outbound SSH connection to each VPS using a user LaunchAge
 
 1. **Set up the link.** On NERV, run `nerv agent` (from a checkout, `node dist/cli.js agent`) or press **i** in the dashboard. Paste the copied instructions into your setup agent’s chat. The guide covers keys, aliases, the tunnel service and a round-trip check. Choose a return alias such as `nerv` for each EVA. [Agent setup guide](docs/agent-setup.md)
 2. **Register the EVA.** Press **a** and choose **Add an existing tunnel** to register it. Choose **Set up a new EVA** for the agent instructions. If no new tunnels are available, the wizard offers to copy the instructions immediately. After the agent finishes, select **Scan again for new tunnels**. Repeat for each VPS. You can run `nerv agent --stdout` to read the guide in the terminal.
-3. **Give the agent a concrete task.** For example, ask the agent on an EVA, “The project is on NERV. Run `ssh nerv 'ls ~/projects'` and show me the available projects.” Commands that use this alias execute on NERV. Other commands in the agent’s shell run on its EVA.
+3. **Give the EVA agent its operating instructions.** Press **g** in the NERV dashboard and paste the copied text into `AGENTS.md` or `CLAUDE.md` on the EVA. The agent works on the EVA by default and uses `ssh nerv` when you explicitly ask it to work on NERV. [Clipboard text in Russian](docs/eva-instructions.md)
+4. **Give the agent a concrete task.** For example, ask the agent on an EVA, “The project is on NERV. Run `ssh nerv 'ls ~/projects'` and show me the available projects.” Commands that use this alias execute on NERV. Other commands in the agent’s shell run on its EVA.
 
 ## Run from source
 
@@ -68,6 +69,7 @@ Profiles are stored in `${XDG_CONFIG_HOME:-~/.config}/nerv/config.json` with mod
 | ↑ / ↓ | Select an EVA |
 | a | Add an existing tunnel or set up a new EVA |
 | i | Copy the environment setup guide for your agent |
+| g | Copy instructions for `AGENTS.md` or `CLAUDE.md` on the EVA |
 | e | Edit the selected profile and review changes before saving |
 | s | Enable and start its tunnel and configured listener |
 | r | Restart the selected tunnel |

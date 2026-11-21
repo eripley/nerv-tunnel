@@ -10,8 +10,10 @@ export function setupGuide() {
 
 export const copied = "Setup guide copied. Paste it into your agent chat.";
 
-export function copySetupGuide() {
-  const input = setupGuide();
+export const evaCopied =
+  "Copied. Paste into AGENTS.md or CLAUDE.md on the EVA.";
+
+function copy(input: string, failure: string) {
   try {
     execFileSync("/usr/bin/pbcopy", [], {
       input,
@@ -20,8 +22,24 @@ export function copySetupGuide() {
       env: { ...process.env, LC_ALL: "en_US.UTF-8" },
     });
   } catch {
-    throw new Error(
-      "Clipboard unavailable. Run nerv agent --stdout for the setup guide.",
-    );
+    throw new Error(failure);
   }
+}
+
+export function copySetupGuide() {
+  copy(
+    setupGuide(),
+    "Clipboard unavailable. Run nerv agent --stdout for the setup guide.",
+  );
+}
+
+export function copyEvaInstructions() {
+  const input = readFileSync(
+    new URL("../docs/eva-instructions.md", import.meta.url),
+    "utf8",
+  );
+  copy(
+    input,
+    "Clipboard unavailable. See the EVA instructions linked in the README.",
+  );
 }
