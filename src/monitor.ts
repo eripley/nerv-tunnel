@@ -32,6 +32,7 @@ export function initial(): Frame {
   };
 }
 export function watch(p: Profile, update: (frame: Frame) => void) {
+  const controller = new AbortController();
   let state = initial(),
     lastPid: number | undefined,
     nextCheck = 0,
@@ -81,7 +82,7 @@ export function watch(p: Profile, update: (frame: Frame) => void) {
       if (Date.now() >= nextCheck && pending !== id) {
         pending = id;
         nextCheck = Date.now() + 15000;
-        void probe(p)
+        void probe(p, controller.signal)
           .then((check) => {
             if (id === generation)
               emit({
@@ -124,6 +125,7 @@ export function watch(p: Profile, update: (frame: Frame) => void) {
   const timer = setInterval(() => void sample(), 1000);
   return () => {
     alive = false;
+    controller.abort();
     clearInterval(timer);
   };
 }

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, stat, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { rates, parseCounters, tunnelHost } from "../dist/service.js";
+import { control, rates, parseCounters, tunnelHost } from "../dist/service.js";
 import { renderToString } from "ink";
 import React from "react";
 import { View, demoFrame } from "../dist/panel.js";
@@ -14,6 +14,39 @@ const fixture = {
   reverse: "return-host",
   tunnel: "org.example.link",
 };
+test("stop and restart only interrupt the selected tunnel, preserving its companion", async () => {
+  const profile = { ...fixture, listener: "org.example.listener" };
+  const loaded = new Set([profile.tunnel, profile.listener]);
+  const calls = [];
+  const system = {
+    checkJobs: async () => {},
+    job: async (label) => ({ state: loaded.has(label) ? "running" : "off" }),
+    launch: async (cmd, target, path) => {
+      const label = path
+        ? path
+            .split("/")
+            .at(-1)
+            .replace(/\.plist$/, "")
+        : target.split("/").at(-1);
+      calls.push([cmd, label]);
+      if (cmd === "bootout") loaded.delete(label);
+      if (cmd === "bootstrap") loaded.add(label);
+    },
+  };
+  await control(profile, "restart", system);
+  assert.deepEqual(calls, [
+    ["disable", profile.tunnel],
+    ["bootout", profile.tunnel],
+    ["enable", profile.listener],
+    ["enable", profile.tunnel],
+    ["bootstrap", profile.tunnel],
+  ]);
+  calls.length = 0;
+  await control(profile, "stop", system);
+  assert.deepEqual([...loaded], [profile.listener]);
+  await control(profile, "stop", system);
+  assert.equal(calls.filter(([cmd]) => cmd === "bootout").length, 1);
+});
 test("configuration is local, private and rejects unsafe alias values and duplicate tunnels", async () => {
   const tmp = await mkdtemp(join(tmpdir(), "link-test-"));
   process.env.XDG_CONFIG_HOME = tmp;

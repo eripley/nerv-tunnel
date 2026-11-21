@@ -10,8 +10,14 @@ const exec = promisify(execFile);
 const domain = "gui/" + process.getuid?.();
 const agentDir = join(homedir(), "Library", "LaunchAgents");
 const plist = (label: string) => join(agentDir, label + ".plist");
-async function run(binary: string, args: string[], timeout = 5000) {
-  return (await exec(binary, args, { timeout, maxBuffer: 1024 * 1024 })).stdout;
+async function run(
+  binary: string,
+  args: string[],
+  timeout = 5000,
+  signal?: AbortSignal,
+) {
+  return (await exec(binary, args, { timeout, signal, maxBuffer: 1024 * 1024 }))
+    .stdout;
 }
 const launch = (...args: string[]) => run("/bin/launchctl", args);
 export async function labels() {
@@ -77,19 +83,21 @@ export async function job(label: string): Promise<Job> {
 export async function control(
   p: Profile,
   action: "start" | "stop" | "restart",
+  system = { checkJobs, job, launch },
 ) {
-  await checkJobs(p);
+  await system.checkJobs(p);
   const target = domain + "/" + p.tunnel;
   if (action !== "start") {
-    await launch("disable", target);
-    if ((await job(p.tunnel)).state !== "off") await launch("bootout", target);
+    await system.launch("disable", target);
+    if ((await system.job(p.tunnel)).state !== "off")
+      await system.launch("bootout", target);
   }
   if (action !== "stop") {
     for (const label of [p.listener, p.tunnel]) {
       if (!label) continue;
-      await launch("enable", domain + "/" + label);
-      if ((await job(label)).state === "off")
-        await launch("bootstrap", domain, plist(label));
+      await system.launch("enable", domain + "/" + label);
+      if ((await system.job(label)).state === "off")
+        await system.launch("bootstrap", domain, plist(label));
     }
   }
 }
@@ -98,7 +106,7 @@ export interface Check {
   ms: number;
   at: number;
 }
-export async function probe(p: Profile): Promise<Check> {
+export async function probe(p: Profile, signal?: AbortSignal): Promise<Check> {
   if (!token(p.reverse) || !token(p.host)) throw new Error("Invalid SSH alias");
   const opts = [
     "-nT",
@@ -122,6 +130,7 @@ export async function probe(p: Profile): Promise<Check> {
       "/usr/bin/ssh",
       [...opts, p.host, ["ssh", ...opts, p.reverse, "uname", "-s"].join(" ")],
       12000,
+      signal,
     );
     ok = output.trim().split("\n").at(-1) === "Darwin";
   } catch {

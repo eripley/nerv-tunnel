@@ -26,4 +26,5 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm test
       - run: node scripts/check-pack.mjs
+      - run: bash scripts/scan-release.sh
       - run: npm publish ./*.tgz --ignore-scripts --access public --provenance
