@@ -22,6 +22,8 @@ async function wizard() {
     const choices: { label: string; host: string }[] = [];
     for (const label of await labels()) {
       try {
+        // Inspect one local plist at a time to bound child process usage.
+        // eslint-disable-next-line no-await-in-loop
         const host = tunnelHost(await definition(label));
         if (host) choices.push({ label, host });
       } catch {
@@ -33,7 +35,7 @@ async function wizard() {
         "No existing reverse SSH LaunchAgent found. See README for supported jobs.",
       );
     choices.forEach((c, i) =>
-      console.log(String(i + 1) + ". " + c.label + " → " + c.host),
+      console.log(`${String(i + 1)}. ${c.label} → ${c.host}`),
     );
     const choice = choices[Number(await rl.question("Tunnel number: ")) - 1];
     if (!choice) throw new Error("Select a listed tunnel number.");
@@ -104,25 +106,34 @@ async function main() {
     ).waitUntilExit();
     return;
   }
+  if (
+    action !== "status" &&
+    action !== "start" &&
+    action !== "stop" &&
+    action !== "restart"
+  )
+    throw new Error("Unknown command. See nerv --help.");
+  if (action !== "status" && !name) throw new Error("Specify a profile name.");
   const list = await profiles();
   const selected = name ? list.filter((p) => p.name === name) : list;
   if (!selected.length) throw new Error("Profile not found. Use nerv add.");
   if (action === "status") {
+    // Probe one route at a time and print results as they arrive.
     for (const p of selected) {
-      const service = await job(p.tunnel),
-        check = service.pid ? await probe(p) : undefined;
+      // eslint-disable-next-line no-await-in-loop
+      const service = await job(p.tunnel);
+      // eslint-disable-next-line no-await-in-loop
+      const check = service.pid ? await probe(p) : undefined;
       console.log(
         p.name,
         service.state,
-        check?.ok ? "verified " + check.ms + " ms" : "unavailable",
+        check?.ok ? `verified ${check.ms} ms` : "unavailable",
       );
       if (!check?.ok) process.exitCode = 1;
     }
     return;
   }
-  if (action !== "start" && action !== "stop" && action !== "restart")
-    throw new Error("Unknown command. See nerv --help.");
-  if (selected.length !== 1) throw new Error("Specify a profile name.");
+  if (selected.length !== 1) throw new Error("Profile name is ambiguous.");
   await control(selected[0], action);
 }
 main().catch((err: Error) => {

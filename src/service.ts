@@ -7,17 +7,22 @@ import { performance } from "node:perf_hooks";
 import { token, type Profile } from "./config.js";
 
 const exec = promisify(execFile);
-const domain = "gui/" + process.getuid?.();
+const domain = `gui/${process.getuid?.()}`;
 const agentDir = join(homedir(), "Library", "LaunchAgents");
-const plist = (label: string) => join(agentDir, label + ".plist");
+const plist = (label: string) => join(agentDir, `${label}.plist`);
 async function run(
   binary: string,
   args: string[],
-  timeout = 5000,
+  timeout?: number,
   signal?: AbortSignal,
 ) {
-  return (await exec(binary, args, { timeout, signal, maxBuffer: 1024 * 1024 }))
-    .stdout;
+  return (
+    await exec(binary, args, {
+      timeout: timeout ?? 5000,
+      signal,
+      maxBuffer: 1024 * 1024,
+    })
+  ).stdout;
 }
 const launch = (...args: string[]) => run("/bin/launchctl", args);
 export async function labels() {
@@ -42,13 +47,13 @@ export async function definition(label: string) {
     throw new Error("Unsupported LaunchAgent");
   return json as { Program?: string; ProgramArguments: string[] };
 }
-export function tunnelHost(job: {
+export function tunnelHost(agent: {
   Program?: string;
   ProgramArguments: string[];
 }) {
-  const a = job.ProgramArguments;
+  const a = agent.ProgramArguments;
   if (
-    (job.Program ?? a[0]) !== "/usr/bin/ssh" ||
+    (agent.Program ?? a[0]) !== "/usr/bin/ssh" ||
     !a.some((x) => x.startsWith("-R"))
   )
     return undefined;
@@ -69,7 +74,7 @@ export interface Job {
 }
 export async function job(label: string): Promise<Job> {
   try {
-    const text = await launch("print", domain + "/" + label);
+    const text = await launch("print", `${domain}/${label}`);
     const pid = Number(/^\s*pid = (\d+)/m.exec(text)?.[1]) || undefined;
     return { state: /^\s*state = (.+)$/m.exec(text)?.[1] ?? "loaded", pid };
   } catch (e) {
@@ -86,19 +91,20 @@ export async function control(
   system = { checkJobs, job, launch },
 ) {
   await system.checkJobs(p);
-  const target = domain + "/" + p.tunnel;
+  const target = `${domain}/${p.tunnel}`;
   if (action !== "start") {
     await system.launch("disable", target);
     if ((await system.job(p.tunnel)).state !== "off")
       await system.launch("bootout", target);
   }
   if (action !== "stop") {
-    for (const label of [p.listener, p.tunnel]) {
-      if (!label) continue;
-      await system.launch("enable", domain + "/" + label);
+    const startJob = async (label: string) => {
+      await system.launch("enable", `${domain}/${label}`);
       if ((await system.job(label)).state === "off")
         await system.launch("bootstrap", domain, plist(label));
-    }
+    };
+    if (p.listener) await startJob(p.listener);
+    await startJob(p.tunnel);
   }
 }
 export interface Check {
@@ -153,10 +159,10 @@ export function parseCounters(
   const columns = head.split(",");
   const data = rows
     .map((r) => r.split(","))
-    .find((r) => r[0].endsWith("." + pid));
-  if (!data) return;
+    .find((r) => r[0].endsWith(`.${pid}`));
+  if (!data) return undefined;
   const fields = ["bytes_in", "bytes_out"].map((k) => data[columns.indexOf(k)]);
-  if (!fields.every((n) => /^\d+$/.test(n))) return;
+  if (!fields.every((n) => /^\d+$/.test(n))) return undefined;
   return { pid, rx: Number(fields[0]), tx: Number(fields[1]), time };
 }
 export async function counters(pid: number) {
@@ -193,7 +199,7 @@ export function rates(a?: Counter, b?: Counter) {
     b.rx < a.rx ||
     b.tx < a.tx
   )
-    return;
+    return undefined;
   const seconds = (b.time - a.time) / 1000;
   return { rx: (b.rx - a.rx) / seconds, tx: (b.tx - a.tx) / seconds };
 }

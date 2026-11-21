@@ -10,6 +10,7 @@ import {
   type Job,
 } from "./service.js";
 import type { Profile } from "./config.js";
+
 const exec = promisify(execFile);
 export interface Frame {
   phase: string;
@@ -33,20 +34,20 @@ export function initial(): Frame {
 }
 export function watch(p: Profile, update: (frame: Frame) => void) {
   const controller = new AbortController();
-  let state = initial(),
-    lastPid: number | undefined,
-    nextCheck = 0,
-    generation = 0;
-  let alive = true,
-    busy = false,
-    pending: number | undefined;
+  let state = initial();
+  let lastPid: number | undefined;
+  let nextCheck = 0;
+  let generation = 0;
+  let alive = true;
+  let busy = false;
+  let pending: number | undefined;
   function emit(changes: Partial<Frame>) {
     if (!alive) return;
     const prior = state.phase;
     state = { ...state, ...changes };
     if (state.phase !== prior) {
       state.events = [
-        new Date().toLocaleTimeString() + "   " + state.phase,
+        `${new Date().toLocaleTimeString()}   ${state.phase}`,
         ...state.events,
       ].slice(0, 3);
     }
@@ -58,7 +59,7 @@ export function watch(p: Profile, update: (frame: Frame) => void) {
     try {
       const service = await job(p.tunnel);
       if (service.pid !== lastPid) {
-        generation++;
+        generation += 1;
         lastPid = service.pid;
         nextCheck = 0;
         emit({
@@ -110,7 +111,7 @@ export function watch(p: Profile, update: (frame: Frame) => void) {
         tx: speed ? [...state.tx, speed.tx].slice(-20) : [],
       });
     } catch {
-      generation++;
+      generation += 1;
       lastPid = undefined;
       emit({
         ...initial(),
@@ -122,7 +123,7 @@ export function watch(p: Profile, update: (frame: Frame) => void) {
     }
   }
   void sample();
-  const timer = setInterval(() => void sample(), 1000);
+  const timer = setInterval(sample, 1000);
   return () => {
     alive = false;
     controller.abort();

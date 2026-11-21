@@ -23,7 +23,7 @@ export function token(value: unknown): value is string {
 }
 export function validate(p: Profile) {
   for (const key of ["name", "host", "reverse", "tunnel"] as const)
-    if (!token(p?.[key])) throw new Error("Invalid profile field: " + key);
+    if (!token(p?.[key])) throw new Error(`Invalid profile field: ${key}`);
   if (
     p.listener !== undefined &&
     (!token(p.listener) || p.listener === p.tunnel)
@@ -41,14 +41,14 @@ export async function profiles(): Promise<Profile[]> {
   }
   const data = JSON.parse(raw);
   if (data.version !== 1 || !Array.isArray(data.profiles))
-    throw new Error("Unsupported config: " + file);
+    throw new Error(`Unsupported config: ${file}`);
   return data.profiles.map(validate);
 }
 export async function save(p: Profile) {
   validate(p);
   await mkdir(dir, { recursive: true, mode: 0o700 });
-  const lock = await open(file + ".lock", "wx", 0o600);
-  const tmp = file + "." + randomUUID();
+  const lock = await open(`${file}.lock`, "wx", 0o600);
+  const tmp = `${file}.${randomUUID()}`;
   try {
     const list = await profiles();
     if (list.some((x) => x.name === p.name || x.tunnel === p.tunnel))
@@ -56,7 +56,7 @@ export async function save(p: Profile) {
     const out = await open(tmp, "wx", 0o600);
     try {
       await out.writeFile(
-        JSON.stringify({ version: 1, profiles: [...list, p] }, null, 2) + "\n",
+        `${JSON.stringify({ version: 1, profiles: [...list, p] }, null, 2)}\n`,
       );
     } finally {
       await out.close();
@@ -65,6 +65,6 @@ export async function save(p: Profile) {
   } finally {
     await rm(tmp, { force: true });
     await lock.close();
-    await rm(file + ".lock");
+    await rm(`${file}.lock`);
   }
 }

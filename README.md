@@ -44,8 +44,4 @@ Traffic counters come from macOS `nettop` for each tunnel PID. Receive/send are 
 
 For scripts use `nerv status [PROFILE]`, `nerv start PROFILE`, `nerv stop PROFILE` or `nerv restart PROFILE`. Status exits with code 1 if any selected route is unavailable. Set `NO_COLOR=1` for a monochrome display.
 
-## Releases
-
-PR checks build, test, inspect the npm tarball against an allowlist, and install and run the packed CLI. Releases are manual. After review, confirm the npm package name and ownership, configure GitHub's `npm` environment and register `release.yml` as an [npm trusted publisher](https://docs.npmjs.com/trusted-publishers/). Set the package's repository URL to the public repository before releasing. Select **Publish reviewed tag** for a `vX.Y.Z` tag on the history of `main`. Private repositories and ordinary pushes skip publication.
-
 Unofficial Evangelion-inspired project. The cover is original artwork.

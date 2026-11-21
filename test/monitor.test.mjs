@@ -1,11 +1,12 @@
+import { spawnSync } from "node:child_process";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, stat, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { control, rates, parseCounters, tunnelHost } from "../dist/service.js";
 import { renderToString } from "ink";
 import React from "react";
+import { control, rates, parseCounters, tunnelHost } from "../dist/service.js";
 import { View, demoFrame } from "../dist/panel.js";
 
 const fixture = {
@@ -59,6 +60,8 @@ test("configuration is local, private and rejects unsafe alias values and duplic
     await assert.rejects(save({ ...fixture, name: "another" }));
     assert.deepEqual(await profiles(), [fixture]);
     assert.equal(
+      // Mask the file type to compare the POSIX permission bits.
+      // eslint-disable-next-line no-bitwise
       (await stat(join(tmp, "nerv/config.json"))).mode & 0o777,
       0o600,
     );
@@ -116,5 +119,21 @@ test("demo and narrow panel render without reading local configuration", () => {
     assert.match(output, /SIMULATION/);
     assert.match(output, /Connected/);
     assert.match(output, /SSH check/);
+  }
+});
+
+test("lifecycle commands require an explicit profile before reading configuration", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "nerv-cli-"));
+  try {
+    for (const action of ["start", "restart", "stop"]) {
+      const result = spawnSync(process.execPath, ["dist/cli.js", action], {
+        env: { ...process.env, XDG_CONFIG_HOME: dir },
+        encoding: "utf8",
+      });
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /Specify a profile name/);
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
   }
 });

@@ -3,11 +3,16 @@ on:
   pull_request:
   push:
     branches: [main]
+  merge_group:
+  workflow_call:
 permissions:
   contents: read
+
 jobs:
   test:
+    name: Verify CLI
     runs-on: macos-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
         with:
@@ -15,10 +20,30 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: "22"
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npm test
-      - run: node scripts/check-pack.mjs
+      - name: Audit production and development dependencies
+        run: npm audit --audit-level=high
+      - name: Check TypeScript
+        run: npm run typecheck
+      - name: Compile CLI
+        run: npm run build
+      - name: Lint with Airbnb rules
+        run: npm run lint
+      - name: Check formatting
+        run: npm run format:check
+      - name: Test compiled CLI
+        run: node --test test/*.test.mjs
+      - name: Pack, inspect and install CLI
+        run: node scripts/check-pack.mjs
       - name: Scan commit history and extracted npm archive
         run: bash scripts/scan-release.sh
+      - name: Keep verified tarball for publication
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-npm-package
+          path: "*.tgz"
+          if-no-files-found: error
+          retention-days: 1

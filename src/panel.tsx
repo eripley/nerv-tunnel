@@ -6,18 +6,19 @@ import type { Profile } from "./config.js";
 
 const color = (hex: string) =>
   process.env.NO_COLOR !== undefined ? undefined : hex;
-const mint = color("#79dbad"),
-  amber = color("#ffaf62"),
-  red = color("#ef768a");
+const mint = color("#79dbad");
+const amber = color("#ffaf62");
+const red = color("#ef768a");
 function formatBytes(n?: number) {
   if (n === undefined) return "—";
   const units = ["B", "KiB", "MiB", "GiB", "TiB"];
+  let value = n;
   let i = 0;
-  while (n >= 1024 && i < units.length - 1) {
-    n /= 1024;
-    i++;
+  while (value >= 1024 && i < units.length - 1) {
+    value /= 1024;
+    i += 1;
   }
-  return n.toFixed(i ? 1 : 0) + " " + units[i];
+  return `${value.toFixed(i ? 1 : 0)} ${units[i]}`;
 }
 function spark(values: number[]) {
   const max = Math.max(1, ...values);
@@ -63,7 +64,7 @@ export function View({
       {(["rx", "tx"] as const).map((k) => (
         <Text key={k}>
           {k === "rx" ? "Receive    " : "Send       "}
-          {(formatBytes(f.speed?.[k]) + "/s").padEnd(14)}
+          {`${formatBytes(f.speed?.[k])}/s`.padEnd(14)}
           <Text color={k === "rx" ? mint : amber}>
             {compact ? "" : spark(f[k]).padEnd(22)}
           </Text>
@@ -73,17 +74,13 @@ export function View({
       <Text>
         SSH check{" "}
         {f.check
-          ? (f.check.ok ? f.check.ms + " ms" : "failed") +
-            "   " +
-            new Date(f.check.at).toLocaleTimeString()
+          ? `${f.check.ok ? `${f.check.ms} ms` : "failed"}   ${new Date(
+              f.check.at,
+            ).toLocaleTimeString()}`
           : "—"}
       </Text>
       <Box flexDirection="column" marginY={1}>
-        {f.events.map((e, i) => (
-          <Text dimColor key={i}>
-            {e}
-          </Text>
-        ))}
+        {f.events.length > 0 && <Text dimColor>{f.events.join("\n")}</Text>}
       </Box>
       {message && <Text color={red}>{message}</Text>}
       <Text dimColor>
@@ -119,13 +116,13 @@ export function Panel({
   const [frames, setFrames] = useState<Frame[]>(() =>
     names.map((_, i) => (demo ? demoFrame(i) : initial())),
   );
-  const [index, select] = useState(0),
-    [message, setMessage] = useState("");
+  const [index, select] = useState(0);
+  const [message, setMessage] = useState("");
   const busy = useRef(false);
-  const { exit } = useApp(),
-    { stdout } = useStdout();
+  const { exit } = useApp();
+  const { stdout } = useStdout();
   useEffect(() => {
-    if (demo) return;
+    if (demo) return undefined;
     const stops = profiles.map((p, i) =>
       watch(p, (f) => setFrames((old) => old.map((v, n) => (n === i ? f : v)))),
     );
@@ -147,7 +144,7 @@ export function Panel({
     ];
     if (!demo && action) {
       busy.current = true;
-      setMessage(action + "…");
+      setMessage(`${action}…`);
       void control(profiles[index], action)
         .then(() => setMessage(""))
         .catch((e: Error) => setMessage(e.message))

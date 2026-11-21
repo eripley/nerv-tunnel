@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
 const [pack] = JSON.parse(
   execFileSync("npm", ["pack", "--json", "--ignore-scripts"], {
     encoding: "utf8",
@@ -14,12 +15,12 @@ const allowed = [
   "docs/control-room.jpg",
   "docs/terminal.svg",
   ...["cli", "config", "monitor", "panel", "service"].map(
-    (name) => "dist/" + name + ".js",
+    (name) => `dist/${name}.js`,
   ),
 ].sort();
 const actual = pack.files.map((f) => f.path).sort();
 if (JSON.stringify(allowed) !== JSON.stringify(actual))
-  throw Error("Unexpected package files: " + actual.join(", "));
+  throw Error(`Unexpected package files: ${actual.join(", ")}`);
 const temp = mkdtempSync(join(tmpdir(), "nerv-pack-"));
 try {
   execFileSync(
