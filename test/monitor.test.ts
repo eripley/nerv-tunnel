@@ -1,4 +1,4 @@
-import test from "node:test";
+import { jest, test } from "@jest/globals";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
@@ -7,8 +7,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { renderToString } from "ink";
 import React from "react";
-import { control, rates, parseCounters, tunnelHost } from "../dist/service.js";
-import { View, demoFrame } from "../dist/panel.js";
+import { control, rates, parseCounters, tunnelHost } from "../src/service.js";
+import { View, demoFrame } from "../src/panel.js";
 
 const fixture = {
   name: "EVA-A",
@@ -22,10 +22,10 @@ test("restart only interrupts the tunnel and stop works even without the compani
     [profile.tunnel, "running"],
     [profile.listener, "running"],
   ]);
-  const calls = [];
-  const validated = [];
+  const calls: string[][] = [];
+  const validated: (string | undefined)[] = [];
   let listenerExists = true;
-  const system = {
+  const system: NonNullable<Parameters<typeof control>[2]> = {
     checkJobs: async (candidate) => {
       validated.push(candidate.listener);
       if (candidate.listener && !listenerExists)
@@ -36,13 +36,15 @@ test("restart only interrupts the tunnel and stop works even without the compani
       const label = path
         ? path
             .split("/")
-            .at(-1)
-            .replace(/\.plist$/, "")
+            .pop()
+            ?.replace(/\.plist$/, "")
         : target.split("/").at(-1);
+      assert.ok(label);
       calls.push([cmd, label]);
       if (cmd === "bootout") states.delete(label);
       if (cmd === "bootstrap") states.set(label, "waiting");
       if (cmd === "kickstart") states.set(label, "running");
+      return "";
     },
   };
   await control(profile, "restart", system);
@@ -64,17 +66,18 @@ test("restart only interrupts the tunnel and stop works even without the compani
 });
 test("start kicks a loaded idle tunnel and preserves a listener that starts on bootstrap", async () => {
   const profile = { ...fixture, listener: "org.example.listener" };
-  const calls = [];
+  const calls: string[][] = [];
   let listenerLoaded = false;
-  const system = {
+  const system: NonNullable<Parameters<typeof control>[2]> = {
     checkJobs: async () => {},
     job: async (label) => {
       if (label === profile.tunnel) return { state: "waiting" };
       return listenerLoaded ? { state: "running", pid: 23 } : { state: "off" };
     },
     launch: async (cmd, target) => {
-      calls.push([cmd, target.split("/").at(-1)]);
+      calls.push([cmd, target.split("/").pop() ?? target]);
       if (cmd === "bootstrap") listenerLoaded = true;
+      return "";
     },
   };
   await control(profile, "start", system);
@@ -87,9 +90,10 @@ test("start kicks a loaded idle tunnel and preserves a listener that starts on b
 test("configuration is local, private and rejects unsafe alias values and duplicate tunnels", async () => {
   const tmp = await mkdtemp(join(tmpdir(), "link-test-"));
   const originalHome = process.env.XDG_CONFIG_HOME;
+  jest.resetModules();
   process.env.XDG_CONFIG_HOME = tmp;
   try {
-    const { save, profiles, validate } = await import("../dist/config.js?test");
+    const { save, profiles, validate } = await import("../src/config.js");
     assert.deepEqual(await profiles(), []);
     for (const invalid of ["-oProxyCommand=sh", "a;uname", "a\nb", "a/b"])
       assert.throws(() => validate({ ...fixture, reverse: invalid }));
@@ -140,70 +144,70 @@ test("configuration is local, private and rejects unsafe alias values and duplic
     await rm(tmp, { recursive: true, force: true });
   }
 });
-test(
-  "config lock excludes a live writer and recovers after it is killed",
-  { timeout: 15000 },
-  async () => {
-    const tmp = await mkdtemp(join(tmpdir(), "link-lock-"));
-    const originalHome = process.env.XDG_CONFIG_HOME;
-    process.env.XDG_CONFIG_HOME = tmp;
+test("config lock excludes a live writer and recovers after it is killed", async () => {
+  const tmp = await mkdtemp(join(tmpdir(), "link-lock-"));
+  const originalHome = process.env.XDG_CONFIG_HOME;
+  jest.resetModules();
+  process.env.XDG_CONFIG_HOME = tmp;
+  try {
+    const { dir, save, profiles } = await import("../src/config.js");
+    await save(fixture);
+    const lockFile = join(dir, "config.json.lock");
+    const writer = spawn("/usr/bin/perl", [
+      "-MFcntl=:flock",
+      "-e",
+      'open(my $lock, ">>", $ARGV[0]) or die $!; flock($lock, LOCK_EX) or die $!; $|=1; print "locked"; sleep 30;',
+      lockFile,
+    ]);
+    const exit = once(writer, "exit");
     try {
-      const { dir, save, profiles } = await import("../dist/config.js?lock");
-      await save(fixture);
-      const lockFile = join(dir, "config.json.lock");
-      const writer = spawn("/usr/bin/perl", [
-        "-MFcntl=:flock",
-        "-e",
-        'open(my $lock, ">>", $ARGV[0]) or die $!; flock($lock, LOCK_EX) or die $!; $|=1; print "locked"; sleep 30;',
-        lockFile,
+      const [ready] = await Promise.race([
+        once(writer.stdout, "data"),
+        exit.then(() => {
+          throw new Error("Lock holder exited early");
+        }),
       ]);
-      const exit = once(writer, "exit");
-      try {
-        const [ready] = await Promise.race([
-          once(writer.stdout, "data"),
-          exit.then(() => {
-            throw new Error("Lock holder exited early");
-          }),
-        ]);
-        assert.equal(ready.toString(), "locked");
-        const other = {
-          ...fixture,
-          name: "other",
-          tunnel: "org.example.other",
-        };
-        await assert.rejects(save(other), /config is busy/);
-        writer.kill("SIGKILL");
-        assert.deepEqual(await exit, [null, "SIGKILL"]);
-        assert.equal((await stat(lockFile)).size, 0);
+      assert.equal(ready.toString(), "locked");
+      const other = {
+        ...fixture,
+        name: "other",
+        tunnel: "org.example.other",
+      };
+      await assert.rejects(save(other), /config is busy/);
+      writer.kill("SIGKILL");
+      const [code, signal] = await exit;
+      assert.equal(code, null);
+      assert.equal(signal, "SIGKILL");
+      assert.equal((await stat(lockFile)).size, 0);
 
-        const third = {
-          ...fixture,
-          name: "third",
-          tunnel: "org.example.third",
-        };
-        await Promise.all([save(other), save(third)]);
-        assert.deepEqual((await profiles()).map((p) => p.name).sort(), [
-          fixture.name,
-          other.name,
-          third.name,
-        ]);
-      } finally {
-        writer.kill("SIGKILL");
-        await exit;
-      }
+      const third = {
+        ...fixture,
+        name: "third",
+        tunnel: "org.example.third",
+      };
+      await Promise.all([save(other), save(third)]);
+      assert.deepEqual((await profiles()).map((p) => p.name).sort(), [
+        fixture.name,
+        other.name,
+        third.name,
+      ]);
     } finally {
-      if (originalHome === undefined) delete process.env.XDG_CONFIG_HOME;
-      else process.env.XDG_CONFIG_HOME = originalHome;
-      await rm(tmp, { recursive: true, force: true });
+      writer.kill("SIGKILL");
+      await exit;
     }
-  },
-);
+  } finally {
+    if (originalHome === undefined) delete process.env.XDG_CONFIG_HOME;
+    else process.env.XDG_CONFIG_HOME = originalHome;
+    await rm(tmp, { recursive: true, force: true });
+  }
+});
 test("read only matching PID; handle a missing sample or a process restart", () => {
   const csv = ",bytes_out,bytes_in,\nssh.18,50,100,\n";
   const a = parseCounters(csv, 18, 1000);
   assert.deepEqual(a, { pid: 18, rx: 100, tx: 50, time: 1000 });
   assert.equal(parseCounters(csv, 81, 1000), undefined);
   assert.equal(parseCounters(",bytes_out,\nssh.18,5,", 18, 1000), undefined);
+  assert.ok(a);
   const b = { ...a, time: 3000, rx: 300, tx: 150 };
   assert.deepEqual(rates(a, b), { rx: 100, tx: 50 });
   for (const bad of [{ pid: 19 }, { time: 900 }, { rx: 90 }])

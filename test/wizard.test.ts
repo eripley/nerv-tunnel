@@ -1,14 +1,17 @@
 import assert from "node:assert/strict";
 import { setTimeout as delay } from "node:timers/promises";
 import { stripVTControlCharacters } from "node:util";
-import { afterEach, test } from "node:test";
+import { afterEach, test } from "@jest/globals";
 import React from "react";
 import { render, cleanup } from "ink-testing-library";
-import Wizard from "../dist/wizard.js";
+import Wizard from "../src/wizard.js";
 
+import type { Profile } from "../src/config.js";
+
+type WizardSystem = NonNullable<React.ComponentProps<typeof Wizard>["system"]>;
 afterEach(cleanup);
 
-async function show(app, text) {
+async function show(app: ReturnType<typeof render>, text: string) {
   for (let attempts = 0; attempts < 100; attempts += 1) {
     if (stripVTControlCharacters(app.lastFrame() ?? "").includes(text)) {
       // Ink attaches input handlers in a passive effect after painting the frame.
@@ -23,9 +26,14 @@ async function show(app, text) {
   assert.fail(`Missing "${text}" in ${app.lastFrame()}`);
 }
 
-function setup(ok = true, original = undefined, overrides = {}) {
-  const saved = [];
-  const system = {
+function setup(
+  ok = true,
+  original: Profile | undefined = undefined,
+  overrides: Partial<WizardSystem> = {},
+) {
+  const saved: Profile[] = [];
+  const system: WizardSystem = {
+    copySetupGuide() {},
     discover: async () => ({
       existing: original ? [original] : [],
       tunnels: [{ label: "org.example.link", host: "station" }],
@@ -99,7 +107,7 @@ test("offline review allows going back or discarding without writing the profile
   await show(app, "org.example.listener");
   app.stdin.write("\r");
   await show(app, "Route unavailable");
-  assert.match(app.lastFrame(), /Managed separately/);
+  assert.match(app.lastFrame() ?? "", /Managed separately/);
   app.stdin.write("\u001B[B");
   await delay(40);
   app.stdin.write("\u001B[B");

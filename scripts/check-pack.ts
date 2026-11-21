@@ -3,13 +3,14 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const [pack] = JSON.parse(
+const [pack]: { filename: string; files: { path: string }[] }[] = JSON.parse(
   execFileSync("npm", ["pack", "--json", "--ignore-scripts"], {
     encoding: "utf8",
   }),
 );
 const allowed = [
   "package.json",
+  "LICENSE",
   "README.md",
   "README.ru.md",
   "docs/control-room.jpg",
@@ -26,6 +27,7 @@ const allowed = [
     "monitor",
     "panel",
     "service",
+    "update",
     "wizard",
   ].map((name) => `dist/${name}.js`),
 ].sort();

@@ -44,7 +44,7 @@ jobs:
           path: coverage/lcov.info
           if-no-files-found: error
       - name: Pack, inspect and install CLI
-        run: node scripts/check-pack.mjs
+        run: npm run check:pack
       - name: Scan commit history and extracted npm archive
         run: bash scripts/scan-release.sh
       - name: Keep verified tarball for publication
