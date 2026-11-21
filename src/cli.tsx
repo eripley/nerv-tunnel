@@ -112,7 +112,7 @@ program
   });
 program
   .command("add")
-  .description("Configure an existing tunnel interactively.")
+  .description("Add an existing tunnel or set up a new EVA.")
   .action(async () => {
     await wizard();
   });

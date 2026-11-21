@@ -23,7 +23,7 @@ A user LaunchAgent on NERV keeps an outbound SSH connection to the EVA. The retu
 ## Using NERV with agents
 
 1. **Set up the link.** On NERV, run `nerv agent` (from a checkout, `node dist/cli.js agent`) or press **i** in the dashboard. Paste the copied instructions into your setup agent’s chat. The guide covers keys, aliases, the tunnel service and a round-trip check. Choose a return alias such as `nerv` for each EVA. [Agent setup guide](docs/agent-setup.md)
-2. **Register the EVA.** Press **a** in the dashboard, select its tunnel and save the verified profile. Repeat for each VPS. You can run `nerv agent --stdout` to read the guide in the terminal.
+2. **Register the EVA.** Press **a** and choose **Add an existing tunnel** to register it. Choose **Set up a new EVA** for the agent instructions. If no new tunnels are available, the wizard offers to copy the instructions immediately. After the agent finishes, select **Scan again for new tunnels**. Repeat for each VPS. You can run `nerv agent --stdout` to read the guide in the terminal.
 3. **Give the agent a concrete task.** For example, ask the agent on an EVA, “The project is on NERV. Run `ssh nerv 'ls ~/projects'` and show me the available projects.” Commands that use this alias execute on NERV. Other commands in the agent’s shell run on its EVA.
 
 ## Try it
@@ -51,7 +51,7 @@ Profiles are stored in `${XDG_CONFIG_HOME:-~/.config}/nerv/config.json` with mod
 | Key | Action |
 | --- | --- |
 | ↑ / ↓ | Select an EVA |
-| a | Add an existing tunnel as a new EVA and select its saved profile |
+| a | Add an existing tunnel or set up a new EVA |
 | i | Copy the environment setup guide for your agent |
 | e | Edit the selected profile and review changes before saving |
 | s | Enable and start its tunnel and configured listener |

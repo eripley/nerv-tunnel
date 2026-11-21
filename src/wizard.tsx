@@ -46,6 +46,8 @@ async function discover(original?: Profile) {
 }
 type Step =
   | "edit"
+  | "add"
+  | "guide"
   | "scan"
   | "tunnel"
   | "name"
@@ -56,6 +58,8 @@ type Step =
   | "saving";
 const steps: Record<Step, number> = {
   edit: 0,
+  add: 0,
+  guide: 0,
   scan: 0,
   tunnel: 0,
   name: 1,
@@ -67,6 +71,7 @@ const steps: Record<Step, number> = {
 };
 const stages = ["Tunnel", "Name", "Return", "Listener", "Review"];
 const previous: Partial<Record<Step, Step>> = {
+  tunnel: "add",
   name: "tunnel",
   reverse: "name",
   listener: "reverse",
@@ -76,16 +81,18 @@ const previous: Partial<Record<Step, Step>> = {
 const questions: Record<Step, string> = {
   edit: "Which setting would you like to change?",
   scan: "Find a tunnel",
+  add: "How would you like to add an EVA?",
+  guide: "Set up a new EVA",
   tunnel: "Which tunnel do you want to monitor?",
   name: "What should we call this EVA?",
-  reverse: "How does the remote machine SSH back to this Mac?",
+  reverse: "How does the remote machine SSH back to NERV?",
   listener: "Does this tunnel use a dedicated SSH listener?",
   verify: "Check the return route",
   review: "Review your connection",
   saving: "Save your profile",
 };
 
-const local = { discover, checkJobs, probe, save };
+const local = { discover, checkJobs, probe, save, copySetupGuide };
 
 export default function Wizard({
   original = undefined,
@@ -120,20 +127,31 @@ export default function Wizard({
     setGuideNotice("");
     setStep(next);
   }
+  function copyGuide() {
+    try {
+      system.copySetupGuide();
+      setGuideNotice(copied);
+    } catch (err) {
+      setGuideNotice((err as Error).message);
+    }
+  }
   const back =
     original && step !== "scan" && step !== "edit" ? "edit" : previous[step];
+  const returnStep = step === "guide" && found?.tunnels.length ? "add" : back;
   useInput((input, key) => {
-    if (input === "i" && step === "tunnel") {
-      try {
-        copySetupGuide();
-        setGuideNotice(copied);
-      } catch (err) {
-        setGuideNotice((err as Error).message);
-      }
+    if (step === "guide" && input === "r") {
+      go("scan");
+      return;
+    }
+    if (
+      (step === "guide" && key.return) ||
+      (input === "i" && (step === "tunnel" || step === "guide"))
+    ) {
+      copyGuide();
       return;
     }
     if (!key.escape || step === "saving") return;
-    if (back) go(back);
+    if (returnStep) go(returnStep);
     else finish();
   });
   useEffect(() => {
@@ -144,7 +162,8 @@ export default function Wizard({
       .then((result) => {
         if (!active) return;
         setFound(result);
-        go(original ? "edit" : "tunnel");
+        if (original) go("edit");
+        else go(result.tunnels.length ? "add" : "guide");
       })
       .catch((err: Error) => {
         if (active) exit(err);
@@ -287,11 +306,34 @@ export default function Wizard({
           {step === "scan" && (
             <Busy label="Finding reverse SSH LaunchAgents…" />
           )}
+          {step === "add" && (
+            <Select
+              key="add"
+              options={[
+                { value: "existing", label: "Add an existing tunnel" },
+                { value: "new", label: "Set up a new EVA" },
+              ]}
+              onChange={(value) =>
+                go(value === "existing" ? "tunnel" : "guide")
+              }
+            />
+          )}
+          {step === "guide" && (
+            <>
+              {!found?.tunnels.length && <Text>No new tunnels found.</Text>}
+              <Text>
+                Give the instructions to your setup agent, then scan for the
+                tunnel it creates.
+              </Text>
+              <Text bold color={palette.mint}>
+                Enter · Copy setup instructions for my agent
+              </Text>
+              <Text>r · Scan again for new tunnels</Text>
+            </>
+          )}
           {empty && (
             <Text>
-              {found?.existing.length
-                ? "No new tunnels found. Open nerv monitor for your saved profiles."
-                : "No reverse SSH LaunchAgent found. See the first connection instructions in the README."}
+              No matching tunnel found. Press Esc to return to profile settings.
             </Text>
           )}
           {step === "tunnel" && !empty && found && (
@@ -362,7 +404,7 @@ export default function Wizard({
             />
           )}
           {step === "verify" && (
-            <Busy label={`Checking Mac → ${draft.host} → ${draft.reverse}…`} />
+            <Busy label={`Checking NERV → ${draft.host} → ${draft.reverse}…`} />
           )}
           {step === "review" && (
             <>
@@ -372,7 +414,7 @@ export default function Wizard({
                   : "△ Route unavailable · you can still save this profile"}
               </Text>
               <Text>
-                {draft.name} · Mac → {draft.host} → {draft.reverse}
+                {draft.name} · NERV → {draft.host} → {draft.reverse}
               </Text>
               <Text>Tunnel {draft.tunnel}</Text>
               <Text>Listener {draft.listener ?? "Managed separately"}</Text>
@@ -395,11 +437,12 @@ export default function Wizard({
           {error && <Text color={palette.flame}>! {error}</Text>}
         </Box>
         <Text dimColor>
-          {step !== "saving" && (back ? "Esc back" : "Esc close")}
+          {step !== "saving" && (returnStep ? "Esc back" : "Esc close")}
           {step === "saving" ? "" : "   ·   Ctrl+C exit"}
           {step === "tunnel" && "   ·   i copy setup guide"}
           {editable && "   ·   Enter continue"}
-          {!empty && ["edit", "listener", "tunnel", "review"].includes(step)
+          {!empty &&
+          ["add", "edit", "listener", "tunnel", "review"].includes(step)
             ? "   ·   ↑↓ choose   Enter select"
             : ""}
         </Text>

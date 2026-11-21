@@ -4,13 +4,13 @@ permissions: {}
 
 jobs:
   build:
-    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && !github.event.repository.private
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     permissions:
       contents: read
     uses: ./.github/workflows/build.yml
 
   verify:
-    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && !github.event.repository.private
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     permissions:
       contents: read
     uses: ./.github/workflows/ci.yml
@@ -43,4 +43,9 @@ jobs:
           name: verified-npm-package
           path: verified-package
       - name: Publish verified archive
-        run: npm publish ./verified-package/*.tgz --ignore-scripts --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: ${{ github.event.repository.private && 'false' || 'true' }}
+        run: |
+          : "${NODE_AUTH_TOKEN:?Add NPM_TOKEN to the npm environment}"
+          npm publish ./verified-package/*.tgz --ignore-scripts --access public
